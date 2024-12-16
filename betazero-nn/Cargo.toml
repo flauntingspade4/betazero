@@ -1,0 +1,9 @@
+[package]
+name = "betazero-nn"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+citron-core = { path = "../../citron/citron-core" }
+
+tensorflow = "0.21"

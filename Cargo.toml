@@ -1,0 +1,11 @@
+[package]
+name = "betazero"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+citron-core = { path = "../citron/citron-core" }
+
+petgraph = "0.6.5"
+
+betazero-nn = { path = "./betazero-nn" }
