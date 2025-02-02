@@ -1,46 +1,75 @@
 mod mc_tree;
+mod record;
 
-use citron_core::move_gen::{Move, MoveGen};
+use citron_core::move_gen::Move;
 use citron_core::Board;
+use mc_tree::MCTree;
+use rand::seq::IndexedRandom;
+use record::GameRecord;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
 const EXPLORATION_PARAMETER: f64 = std::f64::consts::SQRT_2;
 
-#[derive(Debug, Clone, Eq)]
-pub struct MCNode<O>
-where
-    O: Clone + Debug,
-{
-    board: Board,
-    neural_net_output: Option<O>,
+pub fn self_play_from(mut board: Board, rollout_limit: usize) {
+    let mut rng = rand::rng();
+    let mut game_record = GameRecord::new();
+
+    while board.result().is_none() {
+        let tree = analyse_position(board.clone(), rollout_limit);
+
+        let potential_moves: Vec<(usize, Move)> = tree
+            .moves()
+            .map(|m| (m.weight().visit_count, m.weight().played_move.clone()))
+            .collect();
+
+        let chosen_move = potential_moves
+            .choose_weighted(&mut rng, |(visit_count, _)| *visit_count)
+            .expect("Trying to choose a move from an empty list")
+            .clone();
+
+        game_record.add_move(&board, &potential_moves);
+        board = board.make_move(&chosen_move.1).unwrap();
+    }
+
+    let _ = game_record.finish(board.result().unwrap());
 }
 
-impl<O> PartialEq<Self> for MCNode<O>
-where
-    O: Clone + Debug,
-{
+pub fn analyse_position(board: Board, rollout_limit: usize) -> MCTree {
+    let (mut tree, node) = MCTree::new(board);
+
+    for i in 0..rollout_limit {
+        tree.run_rollout_from(node, i);
+    }
+
+    tree
+}
+
+#[derive(Debug, Clone)]
+pub struct MCNode {
+    board: Board,
+    /// A neural network evaluation of the current position.
+    /// When set to `None`, moves from this position have not
+    /// yet been generated
+    value: Option<f64>,
+}
+
+impl PartialEq<Self> for MCNode {
     fn eq(&self, other: &Self) -> bool {
         self.board == other.board
     }
 }
 
-impl<O> From<Board> for MCNode<O>
-where
-    O: Clone + Debug,
-{
+impl From<Board> for MCNode {
     fn from(value: Board) -> Self {
         Self {
             board: value,
-            neural_net_output: None,
+            value: None,
         }
     }
 }
 
-impl<O> Hash for MCNode<O>
-where
-    O: Clone + Debug,
-{
+impl Hash for MCNode {
     fn hash<H: Hasher>(&self, state: &mut H) {
         state.write_u64(self.board.hash());
     }
@@ -79,6 +108,7 @@ impl MCEdge {
     pub fn action_value(&self, parent_visit_count: usize) -> f64 {
         self.average_value
             + EXPLORATION_PARAMETER
-                * ((parent_visit_count as f64).ln() / self.visit_count as f64).sqrt()
+                * self.prior_probability
+                * ((parent_visit_count as f64).sqrt() / (1. + self.visit_count as f64))
     }
 }
