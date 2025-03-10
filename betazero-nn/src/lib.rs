@@ -1,132 +1,93 @@
-// use std::{error::Error, path::Path};
+use citron_core::{move_gen::Move, piece::PieceKind, Board, PlayableTeam, Position};
+use ndarray::Array3;
+use std::sync::LazyLock;
 
-use citron_core::Board;
-use tensorflow::FetchToken;
-use tensorflow::SavedModelBundle;
-// use tensorflow::Graph;
+pub mod record;
+pub mod session_handle;
 
-pub fn evaluate_position(_board: &Board) -> (f64, [[[f64; 64]; 8]; 8]) {
-    todo!("None of this is done")
+// todo some testing perhaps?
+pub fn board_to_network_input(board: &Board, array: &mut Array3<u64>) {
+    let mut piece_map = board.pieces();
+    for &team in PlayableTeam::teams().iter() {
+        for &piece_type in PieceKind::kinds().iter() {
+            while piece_map[team as usize][piece_type as usize] != 0 {
+                let bitmap =
+                    citron_core::magic::pop_lsb(&mut piece_map[team as usize][piece_type as usize]);
+                let position = Position::from_bitmap(1 << bitmap);
+
+                array[[
+                    position.x() as usize,
+                    position.y() as usize,
+                    team as usize * 6 + piece_type as usize,
+                ]] = 1;
+            }
+        }
+    }
 }
 
-use std::error::Error;
-// use std::fs::File;
-// use std::io::Read;/
-// use std::path::Path;
-use std::result::Result;
-// use tensorflow::Code;
-use tensorflow::Graph;
-// use tensorflow::ImportGraphDefOptions;
-// use tensorflow::Session;
-use tensorflow::SessionOptions;
-use tensorflow::SessionRunArgs;
-// use tensorflow::Status;
-use tensorflow::Tensor;
+const KNIGHT_MOVES: [(i16, i16); 8] = [
+    (-1, 2),
+    (1, 2),
+    (2, 1),
+    (2, -1),
+    (1, -2),
+    (-1, -2),
+    (-2, -1),
+    (-2, 1),
+];
 
-pub fn load_model() -> Result<(), Box<dyn Error>> {
-    /*//Sigmatures declared when we saved the model
-    let train_input_parameter_input_name = "training_input";
-    let train_input_parameter_target_name = "training_target";
-    let pred_input_parameter_name = "inputs";
+static SLIDING_MOVES: LazyLock<[(i16, i16); 56]> = LazyLock::new(|| {
+    let mut queen_moves: [(i16, i16); 56] = [(0, 0); 56];
 
-    //Names of output nodes of the graph, retrieved with the saved_model_cli command
-    let train_output_parameter_name = "output_0";
-    let pred_output_parameter_name = "output_0";
+    let queen_directions: [(i16, i16); 8] = [
+        (0, 1),
+        (1, 1),
+        (1, 0),
+        (1, -1),
+        (0, -1),
+        (-1, -1),
+        (-1, 0),
+        (-1, 1),
+    ];
 
-    //Create some tensors to feed to the model for training, one as input and one as the target value
-    //Note: All tensors must be declared before args!
-    let input_tensor: Tensor<f32> = Tensor::new(&[1, 2]).with_values(&[1.0, 1.0]).unwrap();
-    let target_tensor: Tensor<f32> = Tensor::new(&[1, 1]).with_values(&[2.0]).unwrap();*/
-
-    //Path of the saved model
-    let save_dir = "model/";
-
-    //Create a graph
-    let mut graph = Graph::new();
-    let bundle = SavedModelBundle::load(&SessionOptions::new(), &["serve"], &mut graph, save_dir)
-        .expect("Can't load saved model");
-    let session = &bundle.session;
-
-    dbg!(bundle.meta_graph_def());
-
-    let call_signature = bundle
-        .meta_graph_def()
-        .get_signature("serve")
-        .expect("Signature 'call' not found in saved_mode.pb");
-    let input_info = call_signature.get_input("args_0")?;
-    let output_info = call_signature.get_output("output_0")?;
-    let input_op = graph.operation_by_name(&input_info.name().name)?.unwrap();
-    let output_op = graph.operation_by_name(&output_info.name().name)?.unwrap();
-
-    // Create input variables for our addition
-    let mut x = Tensor::new(&[1, 2]);
-    x[0] = 3.0f32;
-    x[1] = 5.;
-    dbg!(&x);
-    // let mut y = Tensor::new(&[1]);
-    // y[0] = 40i32;
-
-    let mut call_step = SessionRunArgs::new();
-    call_step.add_feed(&input_op, 0, &x);
-    // call_step.add_feed(&graph.operation_by_name_required("y")?, 0, &y);
-    // let z = call_step.request_fetch(&graph.operation_by_name_required("z")?, 0);
-    // call_step.add_target(operation);
-    let result = call_step.request_fetch(&output_op, 0);
-    call_step.add_target(&output_op);
-    session.run(&mut call_step)?;
-
-    let result: Tensor<f32> = call_step.fetch(result)?;
-
-    // let z_res: i32 = call_step.fetch(z)?[0];
-    dbg!(result);
-    Ok(())
-}
-
-/*pub fn load_model() -> Result<(), Box<dyn Error>> {
-    let filename = "models/addition/saved_model.pb"; // z = x + y
-    if !Path::new(filename).exists() {
-        return Err(Box::new(
-            Status::new_set(
-                Code::NotFound,
-                &format!(
-                    "Run 'python addition.py' to generate {} \
-                     and try again.",
-                    filename
-                ),
-            )
-            .unwrap(),
-        ));
+    for (i, (x_dir, y_dir)) in queen_directions.iter().enumerate() {
+        for j in 1..8 {
+            queen_moves[i * 7 + j - 1] = (x_dir * j as i16, y_dir * j as i16);
+        }
     }
 
-    // Create input variables for our addition
-    let mut x = Tensor::new(&[1]);
-    x[0] = 2i32;
-    let mut y = Tensor::new(&[1]);
-    y[0] = 40i32;
+    queen_moves
+});
 
-    println!("Loading file");
-    // Load the computation graph defined by addition.py.
-    let mut graph = Graph::new();
-    let mut proto = Vec::new();
-    File::open(filename)?.read_to_end(&mut proto)?;
-    graph.import_graph_def(&proto, &ImportGraphDefOptions::new())?;
-    let session = Session::new(&SessionOptions::new(), &graph)?;
+// todo: underpromotion
+pub fn move_to_probability_index(item: &Move) -> (usize, usize, usize) {
+    let (from, to) = item.from_to();
 
-    // Run the graph.
-    let mut args = SessionRunArgs::new();
-    args.add_feed(&graph.operation_by_name_required("x")?, 0, &x);
-    args.add_feed(&graph.operation_by_name_required("y")?, 0, &y);
-    let z = args.request_fetch(&graph.operation_by_name_required("z")?, 0);
-    session.run(&mut args)?;
+    let x_diff = to.x() as i16 - from.x() as i16;
+    let y_diff = to.y() as i16 - from.y() as i16;
 
-    // Check our results.
-    let z_res: i32 = args.fetch(z)?[0];
-    println!("{:?}", z_res);
+    let move_index = match item.moved_piece_kind() {
+        PieceKind::None => panic!("Illegal none move"),
+        PieceKind::Knight => match KNIGHT_MOVES
+            .iter()
+            .position(|&item| item == (x_diff, y_diff))
+        {
+            Some(i) => 56 + i,
+            None => panic!("Illegal knight move"),
+        },
+        _ => match SLIDING_MOVES
+            .iter()
+            .position(|&item| item == (x_diff, y_diff))
+        {
+            Some(i) => i,
+            None => panic!("Illegal queen move dx {} dy {}", x_diff, y_diff),
+        },
+    };
 
-    Ok(())
+    (from.x() as usize, from.y() as usize, move_index)
 }
-*/
+
 #[test]
-fn main_test() -> Result<(), Box<dyn Error>> {
-    load_model()
+fn main_test() {
+    BZSessionHandle::load(None);
 }

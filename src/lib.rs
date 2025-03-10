@@ -1,22 +1,32 @@
-mod mc_tree;
-mod record;
+// extern crate tensorflow;
 
-use citron_core::move_gen::Move;
-use citron_core::Board;
-use mc_tree::MCTree;
+use betazero_nn::{
+    record::{BoardRecord, GameRecord},
+    session_handle::BZSessionHandle,
+};
+use citron_core::{move_gen::Move, piece::PieceKind, Board, MoveGen, Team};
 use rand::seq::IndexedRandom;
-use record::GameRecord;
-use std::fmt::Debug;
-use std::hash::{Hash, Hasher};
+use std::{
+    hash::{Hash, Hasher},
+    path::Path,
+};
 
-const EXPLORATION_PARAMETER: f64 = std::f64::consts::SQRT_2;
+mod mc_tree;
 
-pub fn self_play_from(mut board: Board, rollout_limit: usize) {
+use mc_tree::MCTree;
+
+const EXPLORATION_PARAMETER: f32 = std::f32::consts::SQRT_2;
+
+pub fn self_play_from(
+    mut board: Board,
+    rollout_limit: usize,
+    handle: &BZSessionHandle,
+) -> Vec<BoardRecord> {
     let mut rng = rand::rng();
     let mut game_record = GameRecord::new();
 
     while board.result().is_none() {
-        let tree = analyse_position(board.clone(), rollout_limit);
+        let tree = analyse_position(board.clone(), rollout_limit, &handle);
 
         let potential_moves: Vec<(usize, Move)> = tree
             .moves()
@@ -32,14 +42,78 @@ pub fn self_play_from(mut board: Board, rollout_limit: usize) {
         board = board.make_move(&chosen_move.1).unwrap();
     }
 
-    let _ = game_record.finish(board.result().unwrap());
+    game_record.finish(match board.result() {
+        Some(t) => t.into(),
+        None => Team::Neither,
+    })
 }
 
-pub fn analyse_position(board: Board, rollout_limit: usize) -> MCTree {
+#[test]
+fn self_play_test() {
+    let board = Board::new();
+    let handle = BZSessionHandle::load(None);
+
+    println!("Ready for self play");
+
+    self_play_from(board, 5, &handle);
+}
+
+#[test]
+fn model_2_test() {
+    let board = Board::new();
+    let handle = BZSessionHandle::load(None);
+
+    let (mut tree, node) = MCTree::new(board);
+
+    for i in 0..10 {
+        println!("Rollout {i}");
+        tree.run_rollout_from(node, i, &handle);
+    }
+}
+
+#[test]
+fn move_gen_test() {
+    /*println!("{:b}", 9259542123273814144u64);
+
+    let board =
+        Board::from_fen("rnbqkbnr/pppppp1p/8/6p1/P7/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
+    println!("{board}");
+    println!("{:b}", board.blockers());
+
+    let moves = MoveGen::new(&board);
+
+    for p_move in moves.into_inner().iter() {
+        println!(
+            "{p_move} with piece {} capturing {}",
+            p_move.moved_piece_kind(),
+            p_move.captured_piece_kind()
+        );
+    }*/
+
+    let board =
+        Board::from_fen("rnbqkbnr/pppppp1p/8/6p1/P7/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
+
+    let move_gen = MoveGen::new(&board).into_inner();
+    // let blockers = board.get_occupied();
+    // println!("{:b}", blockers);
+    // let bishops = board.pieces[0][PieceKind::Bishop as usize];
+    // println!("{:b}", bishops);
+
+    for bishop_move in move_gen
+        .iter()
+        .filter(|p| p.moved_piece_kind() == PieceKind::Bishop)
+    {
+        println!("Bishop move {}", bishop_move);
+    }
+
+    println!("{}", board);
+}
+
+pub fn analyse_position(board: Board, rollout_limit: usize, handle: &BZSessionHandle) -> MCTree {
     let (mut tree, node) = MCTree::new(board);
 
     for i in 0..rollout_limit {
-        tree.run_rollout_from(node, i);
+        tree.run_rollout_from(node, i, handle);
     }
 
     tree
@@ -51,7 +125,7 @@ pub struct MCNode {
     /// A neural network evaluation of the current position.
     /// When set to `None`, moves from this position have not
     /// yet been generated
-    value: Option<f64>,
+    value: Option<[f32; 3]>,
 }
 
 impl PartialEq<Self> for MCNode {
@@ -79,13 +153,13 @@ impl Hash for MCNode {
 pub struct MCEdge {
     played_move: Move,
     visit_count: usize,
-    average_value: f64,
-    total_value: f64,
-    prior_probability: f64,
+    average_value: f32,
+    total_value: f32,
+    prior_probability: f32,
 }
 
 impl MCEdge {
-    pub fn new(played_move: Move, prior_probability: f64) -> Self {
+    pub fn new(played_move: Move, prior_probability: f32) -> Self {
         Self {
             played_move,
             visit_count: 0,
@@ -99,16 +173,16 @@ impl MCEdge {
         self.played_move.clone()
     }
 
-    pub fn propagate_value(&mut self, value: f64) {
+    pub fn propagate_value(&mut self, value: f32) {
         self.visit_count += 1;
         self.total_value += value;
-        self.average_value = self.total_value / self.visit_count as f64;
+        self.average_value = self.total_value / self.visit_count as f32;
     }
 
-    pub fn action_value(&self, parent_visit_count: usize) -> f64 {
+    pub fn action_value(&self, parent_visit_count: usize) -> f32 {
         self.average_value
             + EXPLORATION_PARAMETER
                 * self.prior_probability
-                * ((parent_visit_count as f64).sqrt() / (1. + self.visit_count as f64))
+                * ((parent_visit_count as f32).sqrt() / (1. + self.visit_count as f32))
     }
 }

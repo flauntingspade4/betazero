@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use citron_core::{move_gen::Move, Board, Team};
 
 use crate::move_to_probability_index;
@@ -39,22 +41,32 @@ impl GameRecord {
         self.moves.push(probability_matrix);
     }
 
-    pub fn finish(self, winning_team: Team) -> (Vec<Board>, Vec<[[[f32; 64]; 8]; 8]>, Vec<i16>) {
-        let won = match winning_team {
-            Team::White => [1, -1],
-            Team::Black => [-1, 1],
-            Team::Neither => [0, 0],
-        }
-        .into_iter()
-        .cycle()
-        .take(self.boards.len());
+    pub fn finish(self, winning_team: Team) -> Vec<BoardRecord> {
+        let won = std::iter::repeat(match winning_team {
+            Team::White => [1., 0., 0.],
+            Team::Black => [0., 0., 1.],
+            Team::Neither => [0., 1., 0.],
+        });
 
-        (self.boards, self.moves, won.collect())
+        self.boards
+            .into_iter()
+            .zip(self.moves.into_iter())
+            .zip(won)
+            .enumerate()
+            .map(|(i, ((board, moves), won))| BoardRecord {
+                board,
+                moves,
+                won,
+                move_number: i as u64,
+            })
+            .collect()
     }
 }
 
+#[derive(Deserialize, Serialize)]
 pub struct BoardRecord {
     pub board: Board,
     pub moves: [[[f32; 64]; 8]; 8],
-    pub won: i16,
+    pub won: [f32; 3],
+    pub move_number: u64,
 }

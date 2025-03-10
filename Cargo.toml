@@ -4,9 +4,14 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-citron-core = { path = "../citron/citron-core" }
+citron-core = { path = "../citron/citron-core", features = ["serde"] }
 rand = "0.9.0"
 
 petgraph = "0.6.5"
+tensorflow = { version = "0.21", features = ["ndarray"] }
+ndarray = "^0.15"
+
+serde = "^1.0"
+serde_json = "*"
 
 betazero-nn = { path = "./betazero-nn" }
