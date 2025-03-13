@@ -79,6 +79,7 @@ fn self_play_test() {
     let mut games = Vec::new();
 
     for i in 0..10 {
+        println!("On game {i}");
         games.extend(self_play_game(250, &handle));
     }
 
