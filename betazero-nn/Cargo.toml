@@ -8,7 +8,7 @@ citron-core = { path = "../../citron/citron-core", features=["serde"] }
 
 rand = "*"
 
-tensorflow = "0.21"
+tensorflow = { version = "^0.21", features = ["tensorflow_gpu"] }
 ndarray = { version="^0.15", features = ["serde"] }
 
 serde = { version = "^1.0", features = ["derive"] }

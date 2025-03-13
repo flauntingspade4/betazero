@@ -1,7 +1,7 @@
 use ndarray::Array3;
 use serde::{Deserialize, Serialize};
 
-use citron_core::{move_gen::Move, pgn::Pgn, Board, Team};
+use citron_core::{move_gen::Move, Board, Team};
 use serde_with::serde_as;
 
 use crate::{board_to_network_input, move_to_probability_index};
@@ -11,7 +11,6 @@ use crate::{board_to_network_input, move_to_probability_index};
 pub struct GameRecord {
     boards: Vec<Array3<u64>>,
     moves: Vec<[[[f32; 64]; 8]; 8]>,
-    pgn: Pgn,
 }
 
 impl GameRecord {
@@ -19,16 +18,14 @@ impl GameRecord {
         Self {
             boards: Vec::new(),
             moves: Vec::new(),
-            pgn: Pgn::new(),
         }
     }
 
     /// Adds a move to the record. `moves` is a list
     /// of moves and the number of times they were visited
     /// during rollouts
-    pub fn add_move(&mut self, board: &Board, moves: &[(Move, usize)], played_move: &Move) {
+    pub fn add_move(&mut self, board: &Board, moves: &[(Move, usize)]) {
         self.boards.push(board_to_network_input(board));
-        self.pgn.add_move(&played_move);
 
         let total: usize = moves.iter().map(|(_, visit_count)| *visit_count).sum();
 
@@ -38,19 +35,19 @@ impl GameRecord {
 
         let mut probability_matrix = [[[0.; 64]; 8]; 8];
 
-        println!(
-            "Following moves for this board\n{}\nBoard is also {}\nMax visit count is {}",
-            board,
-            self.boards.last().unwrap(),
-            total
-        );
+        // println!(
+        // "Following moves for this board\n{}\nBoard is also {}\nMax visit count is {}",
+        // board,
+        // self.boards.last().unwrap(),
+        // total
+        // );
 
         for (move_probability, m, visit_count) in moves {
             let (x, y, i) = move_to_probability_index(m);
-            println!(
-                "Move {} has visit count {} and visit probability {}",
-                m, visit_count, move_probability
-            );
+            // println!(
+            // "Move {} has visit count {} and visit probability {}",
+            // m, visit_count, move_probability
+            // );
 
             probability_matrix[x][y][i] = move_probability;
         }
@@ -66,10 +63,7 @@ impl GameRecord {
             Team::Black => [0., 0., 1.],
             Team::Neither => [0., 1., 0.],
         });
-        println!(
-            "Game finished with the following pgn:\n{}",
-            self.pgn.finish()
-        );
+
         self.boards
             .into_iter()
             .zip(self.moves.into_iter())

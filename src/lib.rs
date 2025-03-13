@@ -17,15 +17,15 @@ const EXPLORATION_PARAMETER: f32 = std::f32::consts::SQRT_2;
 /// Self plays a game from the starting position, returning a list
 /// of records for each move
 #[must_use]
-pub fn self_play(rollout_limit: usize, handle: &BZSessionHandle) -> Vec<BoardRecord> {
+pub fn self_play_game(rollout_limit: usize, handle: &BZSessionHandle) -> Vec<BoardRecord> {
     let starting_board = Board::new();
 
-    self_play_from(starting_board, rollout_limit, handle)
+    self_play_game_from(starting_board, rollout_limit, handle)
 }
 
 /// Self plays from a given position, returning a list of records
 /// for each move
-pub fn self_play_from(
+pub fn self_play_game_from(
     mut board: Board,
     rollout_limit: usize,
     handle: &BZSessionHandle,
@@ -49,7 +49,7 @@ pub fn self_play_from(
                 Err(_) => break,
             };
 
-        game_record.add_move(&board, &potential_moves, &chosen_move.0);
+        game_record.add_move(&board, &potential_moves);
         board = board.make_move(&chosen_move.0);
     }
 
@@ -76,7 +76,11 @@ fn self_play_test() {
 
     println!("Ready for self play");
 
-    let records = self_play(250, &handle);
+    let mut games = Vec::new();
+
+    for i in 0..10 {
+        games.extend(self_play_game(250, &handle));
+    }
 
     let f = File::create("games2.json").unwrap();
     let mut f = BufWriter::new(f);

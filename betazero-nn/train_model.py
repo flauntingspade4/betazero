@@ -36,7 +36,7 @@ if __name__ == "__main__":
         games = pickle.load(f)
         inputs, p_outputs, v_outputs = prepare_games(games)
         dataset = tf.data.Dataset.from_tensor_slices((inputs, {"policy_output": p_outputs, "value_output": v_outputs }))
-    data = dataset.batch(5)
+    data = dataset.batch(50)
     print(data)
     # print(p_outputs[0])
     # print(v_outputs[0])
