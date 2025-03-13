@@ -88,8 +88,7 @@ fn self_play_test() {
     serde_pickle::to_writer(&mut f, &games, SerOptions::new()).unwrap();
 }
 
-#[test]
-fn model_2_test() {
+fn main() {
     let board = Board::new();
     let handle = BZSessionHandle::load(None);
 
