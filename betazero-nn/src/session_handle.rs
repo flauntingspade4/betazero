@@ -18,6 +18,8 @@ impl BZSessionHandle {
         let sign_def = bundle.meta_graph_def().signatures();
         println!("SIGNATURES: {:#?}", sign_def);
 
+        println!("{:?}", bundle.session.device_list().unwrap());
+
         // dbg!(bundle.meta_graph_def());
         // let init_signature = bundle
         // .meta_graph_def()
