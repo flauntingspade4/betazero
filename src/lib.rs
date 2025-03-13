@@ -84,7 +84,7 @@ fn self_play_test() {
 
     let f = File::create("games2.json").unwrap();
     let mut f = BufWriter::new(f);
-    serde_pickle::to_writer(&mut f, &records, SerOptions::new()).unwrap();
+    serde_pickle::to_writer(&mut f, &games, SerOptions::new()).unwrap();
 }
 
 #[test]
