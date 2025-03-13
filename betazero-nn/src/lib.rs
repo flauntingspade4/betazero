@@ -5,11 +5,18 @@ use std::sync::LazyLock;
 pub mod record;
 pub mod session_handle;
 
-// todo some testing perhaps?
-pub fn board_to_network_input(board: &Board, array: &mut Array3<u64>) {
+pub use session_handle::BZSessionHandle;
+
+/// Calculates an array from the board that can
+/// then be used with [`BZSessionHandle`]
+pub fn board_to_network_input(board: &Board) -> Array3<u64> {
+    let mut array = Array3::zeros([8, 8, 12]);
+
     let mut piece_map = board.pieces();
+    // Iterate over each team and piece kind
     for &team in PlayableTeam::teams().iter() {
         for &piece_type in PieceKind::kinds().iter() {
+            // Add each piece for that team and kind to the array
             while piece_map[team as usize][piece_type as usize] != 0 {
                 let bitmap =
                     citron_core::magic::pop_lsb(&mut piece_map[team as usize][piece_type as usize]);
@@ -23,6 +30,8 @@ pub fn board_to_network_input(board: &Board, array: &mut Array3<u64>) {
             }
         }
     }
+
+    array
 }
 
 const KNIGHT_MOVES: [(i16, i16); 8] = [
@@ -85,9 +94,4 @@ pub fn move_to_probability_index(item: &Move) -> (usize, usize, usize) {
     };
 
     (from.x() as usize, from.y() as usize, move_index)
-}
-
-#[test]
-fn main_test() {
-    BZSessionHandle::load(None);
 }

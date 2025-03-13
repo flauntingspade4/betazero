@@ -53,13 +53,13 @@ impl BZSessionHandle {
             .operation_by_name(&input_info.name().name)?
             .unwrap();
 
-        let policy_info = call_signature.get_output("output_1")?;
+        let policy_info = call_signature.get_output("policy_output")?;
         let policy_op = self
             .graph
             .operation_by_name(&policy_info.name().name)?
             .unwrap();
 
-        let value_info = call_signature.get_output("output_0")?;
+        let value_info = call_signature.get_output("value_output")?;
         let value_op = self
             .graph
             .operation_by_name(&value_info.name().name)?
@@ -67,7 +67,6 @@ impl BZSessionHandle {
 
         let mut call_step = SessionRunArgs::new();
         call_step.add_feed(&input_op, 0, &input);
-        // call_step.add_target(&policy_op);
         let (policy, value) = (
             call_step.request_fetch(&policy_op, 0),
             call_step.request_fetch(&value_op, 1),
@@ -75,36 +74,5 @@ impl BZSessionHandle {
         self.bundle.session.run(&mut call_step)?;
 
         Ok((call_step.fetch(policy)?, call_step.fetch(value)?))
-    }
-
-    pub fn call_2(&self) -> Result<Tensor<f32>, Status> {
-        let call_signature = self
-            .bundle
-            .meta_graph_def()
-            .get_signature("serving_default")
-            .expect("Signature 'call' not found in saved_mode.pb");
-
-        // println!("{:?}", call_signature.inputs());
-        let input_info = call_signature.get_input("input")?;
-        let input_op = self
-            .graph
-            .operation_by_name(&input_info.name().name)?
-            .unwrap();
-
-        let output_info = call_signature.get_output("output_1")?;
-        let output_op = self
-            .graph
-            .operation_by_name(&output_info.name().name)?
-            .unwrap();
-
-        let mut input: Tensor<f32> = Tensor::new(&[1, 1]);
-        input[0] = 3. as f32;
-        let mut call_step = SessionRunArgs::new();
-        call_step.add_feed(&input_op, 0, &input);
-        // call_step.add_target(&policy_op);
-        let output = call_step.request_fetch(&output_op, 0);
-        self.bundle.session.run(&mut call_step)?;
-
-        Ok(call_step.fetch(output)?)
     }
 }

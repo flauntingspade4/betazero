@@ -11,7 +11,9 @@ petgraph = "0.6.5"
 tensorflow = { version = "0.21", features = ["ndarray"] }
 ndarray = "^0.15"
 
+pyo3 = "^0.24"
+
 serde = "^1.0"
-serde_json = "*"
+serde-pickle = "1.1.1"
 
 betazero-nn = { path = "./betazero-nn" }

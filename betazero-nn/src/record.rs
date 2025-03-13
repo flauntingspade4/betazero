@@ -1,12 +1,17 @@
+use ndarray::Array3;
 use serde::{Deserialize, Serialize};
 
-use citron_core::{move_gen::Move, Board, Team};
+use citron_core::{move_gen::Move, pgn::Pgn, Board, Team};
+use serde_with::serde_as;
 
-use crate::move_to_probability_index;
+use crate::{board_to_network_input, move_to_probability_index};
 
+/// A record of a game, saving the visit
+/// count for training
 pub struct GameRecord {
-    boards: Vec<Board>,
+    boards: Vec<Array3<u64>>,
     moves: Vec<[[[f32; 64]; 8]; 8]>,
+    pgn: Pgn,
 }
 
 impl GameRecord {
@@ -14,26 +19,38 @@ impl GameRecord {
         Self {
             boards: Vec::new(),
             moves: Vec::new(),
+            pgn: Pgn::new(),
         }
     }
 
-    pub fn add_move(&mut self, board: &Board, moves: &[(usize, Move)]) {
-        self.boards.push(board.clone());
+    /// Adds a move to the record. `moves` is a list
+    /// of moves and the number of times they were visited
+    /// during rollouts
+    pub fn add_move(&mut self, board: &Board, moves: &[(Move, usize)], played_move: &Move) {
+        self.boards.push(board_to_network_input(board));
+        self.pgn.add_move(&played_move);
 
-        let max = moves
-            .iter()
-            .max_by(|(m_0, _), (m_1, _)| m_0.cmp(m_1))
-            .expect("No possible moves")
-            .0;
+        let total: usize = moves.iter().map(|(_, visit_count)| *visit_count).sum();
 
         let moves = moves
             .iter()
-            .map(|(visit_count, m)| (*visit_count as f32 / max as f32, m));
+            .map(|(m, visit_count)| (*visit_count as f32 / total as f32, m, *visit_count));
 
         let mut probability_matrix = [[[0.; 64]; 8]; 8];
 
-        for (move_probability, m) in moves {
+        println!(
+            "Following moves for this board\n{}\nBoard is also {}\nMax visit count is {}",
+            board,
+            self.boards.last().unwrap(),
+            total
+        );
+
+        for (move_probability, m, visit_count) in moves {
             let (x, y, i) = move_to_probability_index(m);
+            println!(
+                "Move {} has visit count {} and visit probability {}",
+                m, visit_count, move_probability
+            );
 
             probability_matrix[x][y][i] = move_probability;
         }
@@ -41,13 +58,18 @@ impl GameRecord {
         self.moves.push(probability_matrix);
     }
 
+    /// Finishes the game and returns a list of training
+    /// examples
     pub fn finish(self, winning_team: Team) -> Vec<BoardRecord> {
         let won = std::iter::repeat(match winning_team {
             Team::White => [1., 0., 0.],
             Team::Black => [0., 0., 1.],
             Team::Neither => [0., 1., 0.],
         });
-
+        println!(
+            "Game finished with the following pgn:\n{}",
+            self.pgn.finish()
+        );
         self.boards
             .into_iter()
             .zip(self.moves.into_iter())
@@ -63,9 +85,12 @@ impl GameRecord {
     }
 }
 
+#[serde_as]
 #[derive(Deserialize, Serialize)]
 pub struct BoardRecord {
-    pub board: Board,
+    // #[serde_as(as = "[[[_; 12]; 8]; 8]")]
+    pub board: Array3<u64>,
+    #[serde_as(as = "[[[_; 64]; 8]; 8]")]
     pub moves: [[[f32; 64]; 8]; 8],
     pub won: [f32; 3],
     pub move_number: u64,

@@ -6,7 +6,7 @@ use betazero_nn::{
 };
 use citron_core::MoveGen;
 
-use ndarray::{Array3, ArrayBase, Axis, Dim, Ix, OwnedRepr};
+use ndarray::Axis;
 use petgraph::{
     graph::{EdgeReference, Graph, NodeIndex},
     visit::EdgeRef,
@@ -20,30 +20,43 @@ pub struct MCTree {
 }
 
 impl MCTree {
-    pub fn new<B: Into<MCNode>>(board: B) -> (Self, NodeIndex) {
+    /// Creates a new monte-carlo tree with the given board
+    /// as the noot rode
+    pub fn new<B: Into<MCNode>>(board: B) -> Self {
         let mut graph = Graph::new();
 
         let i = graph.add_node(board.into());
 
-        (
-            Self {
-                graph,
-                root_position: i,
-            },
-            i,
-        )
+        Self {
+            graph,
+            root_position: i,
+        }
     }
 
+    /// Returns an iterate over all of the moves from the root
+    /// position. This should be called after many runs of
+    /// [`Self::run_rollout_from_root`], and a move selected
+    /// according to the number of times each move has been visited
     pub fn moves(&self) -> impl Iterator<Item = EdgeReference<'_, MCEdge>> {
         self.graph.edges(self.root_position)
     }
 
-    pub fn root_position(&self) -> NodeIndex {
+    pub const fn root_position(&self) -> NodeIndex {
         self.root_position
     }
 
-    /// Run a rollout from a given node. Returns the neural network's evaluation
-    /// of the most recently expanded leaf node
+    /// Runs a pass of [`Self::run_rollout_from`] from the root node.
+    /// Visit count should equal the number of times this method has been
+    /// called for this tree.
+    pub fn run_rollout_from_root(&mut self, visit_count: usize, handle: &BZSessionHandle) -> f32 {
+        self.run_rollout_from(self.root_position, visit_count, handle)
+    }
+
+    /// Run a rollout from a given node. This will traverse the
+    /// tree according to the neural network's evaluation until
+    /// it reaches an unexplored position (a new leaf node). At
+    /// This point it will call [`Self::generate_edges_from`] on this
+    /// new leaf node, and return the evaluation from that
     pub fn run_rollout_from(
         &mut self,
         node_index: NodeIndex,
@@ -93,8 +106,13 @@ impl MCTree {
         evaluation
     }
 
-    /// Generate all the edges from a given node, and the nodes
-    /// attached to them
+    /// This should be called on a position that has been inserted into
+    /// the tree, but not yet evaluated by the neural network, i.e. a leaf
+    /// node found by a run of [`Self::run_rollout_from`]. This method will then
+    /// calculate all the possible moves from the position and insert them
+    /// with their resulting board states into the tree, before evaluating
+    /// the current position with the given [`BZSessionHandle`] and updating
+    /// the tree accordingly
     fn generate_edges_from(
         &mut self,
         node_index: NodeIndex,
@@ -110,12 +128,14 @@ impl MCTree {
         // board
         // );
 
+        // Neural network inference
         let (prior_probabilties, value) = {
-            let mut tensor: ArrayBase<OwnedRepr<u64>, Dim<[Ix; 3]>> = Array3::zeros([8, 8, 12]);
-            board_to_network_input(&board, &mut tensor);
-            let tensor = tensor.insert_axis(Axis(0));
-            session_hande.call(Tensor::from(tensor)).unwrap()
+            let array = board_to_network_input(&board);
+            // Insert axis 0 for batch size
+            let array = array.insert_axis(Axis(0));
+            session_hande.call(Tensor::from(array)).unwrap()
         };
+        // debug_assert_eq!(prior_probabilties.shape(), todo!());
         // dbg!((prior_probabilties.shape(), value.shape()));
         // dbg!(&value.shape());
         debug_assert_eq!(value.len(), 3);
@@ -130,7 +150,7 @@ impl MCTree {
             // potential_move.moved_piece_kind()
             // );
             let new_node = MCNode {
-                board: board.make_move(&potential_move).unwrap(),
+                board: board.make_move(&potential_move),
                 value: None,
             };
 
