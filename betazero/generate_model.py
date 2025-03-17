@@ -7,7 +7,7 @@ import tf_keras as keras
 # tf.compat.v1.disable_eager_execution()
 
 
-BLOCKS = 10
+BLOCKS = 40
 FILTERS = 256
 
 

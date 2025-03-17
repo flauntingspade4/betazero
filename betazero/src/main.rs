@@ -136,36 +136,9 @@ fn main() {
     let handle = BZSessionHandle::load(None);
     let mut games = Vec::new();
 
-    /*let mut receivers = Vec::new();
-    let mut threads = Vec::new();
-    // println!("Ready for self play");
-    for thread in 0..2 {
-        let (w, r) = std::sync::mpsc::channel();
-        receivers.push(r);
-        let t = std::thread::spawn(move || {
-            let handle = BZSessionHandle::load(None);
-            for i in 0..7 {
-                w.send(self_play_game(1000, &handle)).unwrap();
-                println!("Sent game {} from thread {}", i, thread);
-            }
-        });
-
-        threads.push(t);
-    }
-
-    for t in threads {
-        t.join().unwrap();
-    }
-
-    for r in receivers {
-        while let Ok(game) = r.recv() {
-            println!("Received game of len {}", game.len());
-            games.extend(game);
-        }
-    }*/
     for i in 0..10 {
         println!("On game {i}");
-        games.extend(self_play_game(1500, &handle));
+        games.extend(self_play_game(1000, &handle));
     }
 
     println!("Writing {} many moves", games.len());
