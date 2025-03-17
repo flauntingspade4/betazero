@@ -63,7 +63,6 @@ if __name__ == "__main__":
         # break
         import time
         import subprocess
-        subprocess.call([r"target/release/betazero.exe"])
         p = subprocess.Popen("cargo run --release", shell=True)
         p.wait()
         time.sleep(1)
