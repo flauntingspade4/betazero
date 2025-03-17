@@ -1,4 +1,4 @@
 **/target
 **/.idea
-betazero-nn/model
-/model
+**/model
+**/games
