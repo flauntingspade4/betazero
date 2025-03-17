@@ -80,7 +80,7 @@ class betazero_model(keras.Model):
         # v = self.value_relu(v)
         v = self.value_conv_to_vector(v)
         
-        return {"policy_output": self.policy_softmax(self.policy_output(p)), "value_output": self.value_softmax(self.value_output(v))}
+        return {"policy_output": self.policy_output(p), "value_output": self.value_softmax(self.value_output(v))}
 
 def generate_model():
     bz_model = betazero_model()
