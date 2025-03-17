@@ -7,7 +7,7 @@ import tf_keras as keras
 # tf.compat.v1.disable_eager_execution()
 
 
-BLOCKS = 40
+BLOCKS = 10
 FILTERS = 256
 
 
@@ -51,7 +51,7 @@ class betazero_model(keras.Model):
         self.policy_batch_norm = keras.layers.BatchNormalization(axis=-1, name="policy_batch_norm")
         # self.policy_output = keras.layers.Dense(8 * 8 * 64, name="policy_output")
         self.policy_output = keras.layers.Conv2D(64, (3, 3), padding="same", name="policy_output")
-        self.policy_softmax = keras.layers.Softmax([1, 2, 3])
+        # self.policy_softmax = keras.layers.Softmax([1, 2, 3])
         # Value head
         self.value_conv = keras.layers.Conv2D(32, (3, 3), padding="same")
         self.value_flatten = keras.layers.Flatten()
@@ -66,7 +66,6 @@ class betazero_model(keras.Model):
         x = tf.cast(board, tf.float32)
         while x.ndim < 4:
             x = tf.expand_dims(x, 0)
-        print("x after being expanded: " + str(x))
         # The main body of the network
         x = self.input_conv(x)
         for residual_block in self.residual_blocks:
