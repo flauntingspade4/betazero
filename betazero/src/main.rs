@@ -46,38 +46,38 @@ pub fn self_play_game_from(
     let mut game_record = GameRecord::new();
 
     loop {
-        println!("Playing move");
         match board.result() {
             Some(PlayableTeam::White) | Some(PlayableTeam::Black) => break,
             None => {
                 let tree = analyse_position(board.clone(), rollout_limit, handle);
 
-                let potential_moves: Vec<(Move, usize, f32)> = tree
+                let potential_moves: Vec<(Move, usize, f32, f32)> = tree
                     .moves()
                     .map(|m| {
                         (
                             m.weight().played_move(),
                             m.weight().visit_count,
                             m.weight().average_value,
+                            m.weight().prior_probability,
                         )
                     })
                     .collect();
 
-                let (chosen_move, visits, p) = if let Some((winning_move, visits, p)) =
+                let (chosen_move, visits, v, p) = if let Some((winning_move, visits, v, p)) =
                     potential_moves
                         .iter()
-                        .find(|(m, _, _)| m.captured_piece_kind() == PieceKind::King)
+                        .find(|(m, _, _, _)| m.captured_piece_kind() == PieceKind::King)
                 {
                     println!(
                         "Playing winning king move with probability {} ({} visits)",
-                        p, visits
+                        v, visits
                     );
-                    (winning_move, visits, p)
+                    (winning_move, visits, v, p)
                 } else {
                     match potential_moves
-                        .choose_weighted(&mut rng, |(_, visit_count, _)| *visit_count)
+                        .choose_weighted(&mut rng, |(_, visit_count, _, _)| *visit_count)
                     {
-                        Ok((m, visits, p)) => (m, visits, p),
+                        Ok((m, visits, v, p)) => (m, visits, v, p),
                         // This should never happen, but if there is never a possible move
                         // then it should be treated as stalemate (Maybe)
                         Err(_) => break,
@@ -87,8 +87,8 @@ pub fn self_play_game_from(
                 game_record.add_move(&board, &potential_moves);
                 board = board.make_move(&chosen_move);
                 println!(
-                    "Next move played with p={}\n{} ({} visits)",
-                    p, board, visits
+                    "Next move played with v={}, p={} and {} visits\n{}",
+                    v, p, visits, board
                 );
             }
         }
@@ -163,7 +163,7 @@ fn main() {
             games.extend(game);
         }
     }*/
-    for i in 0..5 {
+    for i in 0..10 {
         println!("On game {i}");
         games.extend(self_play_game(1500, &handle));
     }
