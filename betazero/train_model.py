@@ -44,7 +44,7 @@ def load_and_train(model, file_name="latest.pickle"):
     optimizer = keras.optimizers.Adam(learning_rate=1e-6)
     model.compile(optimizer=optimizer, loss={"policy_output": "categorical_crossentropy", "value_output": "categorical_crossentropy"}, metrics={"policy_output": ["mse", "accuracy"], "value_output": ["mse", "accuracy"]})
 
-    model.fit(dataset, epochs=10, shuffle=True)
+    model.fit(dataset, epochs=5, shuffle=True)
 
 
 if __name__ == "__main__":

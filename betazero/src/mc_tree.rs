@@ -74,13 +74,6 @@ impl MCTree {
             return self.generate_edges_from(node_index, handle);
         }
 
-        // This happens when the network has previously evaluated this position
-        // (from the parent node)
-        // if visit_count == 0 {
-        // let [w_win, _, b_win] = self.graph.node_weight(node_index).unwrap().value.unwrap();
-        // return Ok(w_win - b_win);
-        // }
-
         // Choose the action with the greatest action value
         let chosen_edge = outgoing_moves
             .max_by(|a, b| {
@@ -89,13 +82,6 @@ impl MCTree {
                     .total_cmp(&b.weight().action_value(visit_count))
             })
             .unwrap();
-        // println!(
-        // "Chosen move {} with p {} and action value {}",
-        // chosen_edge.weight().played_move,
-        // chosen_edge.weight().prior_probability,
-        // chosen_edge.weight().action_value(visit_count)
-        // );
-
         let edge_index = chosen_edge.id();
 
         let board = &self.graph.node_weight(node_index).unwrap().board;

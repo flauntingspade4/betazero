@@ -63,17 +63,21 @@ pub fn self_play_game_from(
                     })
                     .collect();
 
-                let (chosen_move, p) = if let Some((winning_move, _, p)) = potential_moves
-                    .iter()
-                    .find(|(m, _, _)| m.captured_piece_kind() == PieceKind::King)
+                let (chosen_move, visits, p) = if let Some((winning_move, visits, p)) =
+                    potential_moves
+                        .iter()
+                        .find(|(m, _, _)| m.captured_piece_kind() == PieceKind::King)
                 {
-                    println!("Playing winning king move with probability {}", p);
-                    (winning_move, p)
+                    println!(
+                        "Playing winning king move with probability {} ({} visits)",
+                        p, visits
+                    );
+                    (winning_move, visits, p)
                 } else {
                     match potential_moves
                         .choose_weighted(&mut rng, |(_, visit_count, _)| *visit_count)
                     {
-                        Ok((m, _, p)) => (m, p),
+                        Ok((m, visits, p)) => (m, visits, p),
                         // This should never happen, but if there is never a possible move
                         // then it should be treated as stalemate (Maybe)
                         Err(_) => break,
@@ -82,7 +86,10 @@ pub fn self_play_game_from(
 
                 game_record.add_move(&board, &potential_moves);
                 board = board.make_move(&chosen_move);
-                println!("Next move played with p={}\n{}", p, board);
+                println!(
+                    "Next move played with p={}\n{} ({} visits)",
+                    p, board, visits
+                );
             }
         }
     }
@@ -158,7 +165,7 @@ fn main() {
     }*/
     for i in 0..5 {
         println!("On game {i}");
-        games.extend(self_play_game(700, &handle));
+        games.extend(self_play_game(1500, &handle));
     }
 
     println!("Writing {} many moves", games.len());
