@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use citron_core::{move_gen::Move, Board, Team};
 use serde_with::serde_as;
 
-use crate::{board_to_network_input, move_to_probability_index};
+use crate::positions::{board_to_network_input, move_to_probability_index};
 
 /// A record of a game, saving the visit
 /// count for training

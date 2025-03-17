@@ -1,26 +1,28 @@
 #![warn(clippy::pedantic, clippy::all, clippy::nursery)]
 
-use betazero_nn::{
-    record::{BoardRecord, GameRecord},
-    session_handle::BZSessionHandle,
-};
-use chrono::{DateTime, Local};
-use citron_core::{move_gen::Move, piece::PieceKind, Board, Team};
-use ndarray::Array3;
-use rand::seq::IndexedRandom;
-use serde_pickle::SerOptions;
 use std::{
     fs::File,
     hash::{Hash, Hasher},
-    io::{BufWriter, Write},
-    path::{Path, PathBuf},
+    io::BufWriter,
+    path::PathBuf,
     time::Instant,
 };
-use tensorflow::Tensor;
+
+use chrono::Local;
+use rand::seq::IndexedRandom;
+
+use serde_pickle::SerOptions;
+
+use citron_core::{move_gen::Move, piece::PieceKind, Board, PlayableTeam, Team};
 
 mod mc_tree;
+pub mod positions;
+mod record;
+mod session_handle;
 
 use mc_tree::MCTree;
+use record::{BoardRecord, GameRecord};
+use session_handle::BZSessionHandle;
 
 const EXPLORATION_PARAMETER: f32 = std::f32::consts::SQRT_2;
 
@@ -46,9 +48,8 @@ pub fn self_play_game_from(
     loop {
         println!("Playing move");
         match board.result() {
-            None => return Vec::new(),
-            Some(Team::White) | Some(Team::Black) => break,
-            Some(Team::Neither) => {
+            Some(PlayableTeam::White) | Some(PlayableTeam::Black) => break,
+            None => {
                 let tree = analyse_position(board.clone(), rollout_limit, handle);
 
                 let potential_moves: Vec<(Move, usize, f32)> = tree

@@ -1,16 +1,6 @@
-use citron_core::{
-    move_gen::Move,
-    piece::{Piece, PieceKind},
-    Board, PlayableTeam, Position,
-};
+use citron_core::{move_gen::Move, piece::PieceKind, Board, PlayableTeam, Position};
 use ndarray::{Array4, Axis};
 use std::sync::LazyLock;
-use tensorflow::Tensor;
-
-pub mod record;
-pub mod session_handle;
-
-pub use session_handle::BZSessionHandle;
 
 /// Calculates an array from the board that can
 /// then be used with [`BZSessionHandle`].
