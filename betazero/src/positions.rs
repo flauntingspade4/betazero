@@ -86,50 +86,25 @@ pub fn network_input_to_board(input: &Array4<u64>, played_team: PlayableTeam) ->
         }
     }
 
-    /*let mut piece_map = board.pieces();
-    // Iterate over each team and piece kind
-    for &team in PlayableTeam::teams().iter() {
-        for &piece_type in PieceKind::kinds().iter() {
-            // Add each piece for that team and kind to the array
-            while piece_map[team as usize][piece_type as usize] != 0 {
-                let bitmap =
-                    citron_core::magic::pop_lsb(&mut piece_map[team as usize][piece_type as usize]);
-                let position = Position::from_bitmap(1 << bitmap);
-
-                if played_team == PlayableTeam::White {
-                    array[[
-                        0,
-                        position.x() as usize,
-                        position.y() as usize,
-                        team as usize * 6 + piece_type as usize,
-                    ]] = 1;
-                } else {
-                    array[[
-                        0,
-                        7 - position.x() as usize,
-                        7 - position.y() as usize,
-                        (!team) as usize * 6 + piece_type as usize,
-                    ]] = 1;
-                }
-            }
-        }
-    }*/
-
     board
 }
 
 #[test]
 fn network_input_to_board_test() {
-    let handle = BZSessionHandle::load(None);
+    let handle = crate::session_handle::BZSessionHandle::load(None);
     let board = Board::from_fen("b3k2b/8/8/3n4/1B4n1/2PP4/4PPP1/4K2B w - - 0 1").unwrap();
     let network_input = board_to_network_input(&board, PlayableTeam::White);
-    let network_output = handle.call(Tensor::from(network_input.clone())).unwrap();
+    let network_output = handle
+        .call(tensorflow::Tensor::from(network_input.clone()))
+        .unwrap();
 
     println!("{}\n{}", board, network_output.1);
     let new_board = network_input_to_board(&network_input, PlayableTeam::White);
     let network_input = board_to_network_input(&new_board, PlayableTeam::Black);
 
-    let network_output = handle.call(Tensor::from(network_input)).unwrap();
+    let network_output = handle
+        .call(tensorflow::Tensor::from(network_input))
+        .unwrap();
 
     println!("Reconstructed board\n{}\n{}", new_board, network_output.1);
 }
@@ -267,14 +242,16 @@ fn flip_probability_index() {
 #[test]
 fn flip_probability_from_network() {
     use citron_core::Board;
-    let handle = BZSessionHandle::load(None);
+    let handle = crate::session_handle::BZSessionHandle::load(None);
 
     let board = &Board::from_fen("k7/2n5/1n6/3r4/4R3/6N1/5N2/7K w - - 0 1").unwrap();
     let board_input = board_to_network_input(&board, PlayableTeam::White);
-    let output = handle.call(Tensor::from(&board_input)).unwrap();
+    let output = handle.call(tensorflow::Tensor::from(&board_input)).unwrap();
 
     let flipped_board_input = board_to_network_input(&board, PlayableTeam::Black);
-    let flipped_output = handle.call(Tensor::from(flipped_board_input)).unwrap();
+    let flipped_output = handle
+        .call(tensorflow::Tensor::from(flipped_board_input))
+        .unwrap();
 
     assert_eq!(output.0, flipped_output.0);
     assert_eq!(output.1, flipped_output.1);

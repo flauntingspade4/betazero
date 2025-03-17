@@ -4,7 +4,7 @@ use tensorflow::{Graph, SavedModelBundle, SessionOptions, SessionRunArgs, Status
 
 #[test]
 fn flip_call_test() {
-    use crate::board_to_network_input;
+    use crate::positions::board_to_network_input;
     use citron_core::Board;
     let handle = BZSessionHandle::load(None);
 

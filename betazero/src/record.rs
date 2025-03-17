@@ -27,8 +27,6 @@ impl GameRecord {
     pub fn add_move(&mut self, board: &Board, moves: &[(Move, usize, f32, f32)]) {
         self.boards
             .push(board_to_network_input(board, board.to_play()));
-        self.boards
-            .push(board_to_network_input(board, !board.to_play()));
 
         let total: usize = moves
             .iter()
@@ -97,7 +95,7 @@ impl GameRecord {
 }
 
 #[serde_as]
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct BoardRecord {
     // #[serde_as(as = "[[[_; 12]; 8]; 8]")]
     pub board: Array4<u64>,

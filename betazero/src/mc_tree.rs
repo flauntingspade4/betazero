@@ -1,10 +1,13 @@
+use std::time::Instant;
+
 use crate::{
     positions::{board_to_network_input, move_to_probability_index},
     BZSessionHandle, MCEdge, MCNode,
 };
 
-use citron_core::{MoveGen, PlayableTeam};
+use citron_core::{piece::PieceKind, Board, MoveGen, PlayableTeam};
 
+use ndarray::Axis;
 use petgraph::{
     graph::{EdgeReference, Graph, NodeIndex},
     visit::EdgeRef,
@@ -86,14 +89,13 @@ impl MCTree {
 
         let board = &self.graph.node_weight(node_index).unwrap().board;
         let to_play = board.to_play();
+
         let evaluation = match board.result() {
-            Some(t @ PlayableTeam::White) | Some(t @ PlayableTeam::Black) => {
-                match t.compare(&to_play.into()) {
-                    citron_core::TeamComparison::Same => Ok(1.),
-                    citron_core::TeamComparison::Different => Ok(-1.),
-                    citron_core::TeamComparison::None => unreachable!(),
-                }
-            }
+            Some(t) => match t.compare(&to_play.into()) {
+                citron_core::TeamComparison::Same => Ok(1.),
+                citron_core::TeamComparison::Different => Ok(-1.),
+                citron_core::TeamComparison::None => unreachable!(),
+            },
             None => Ok(-self.run_rollout_from(
                 chosen_edge.target(),
                 chosen_edge.weight().visit_count,
@@ -159,13 +161,11 @@ impl MCTree {
         }
 
         match board.result() {
-            Some(t @ PlayableTeam::White) | Some(t @ PlayableTeam::Black) => {
-                match t.compare(&board.to_play().into()) {
-                    citron_core::TeamComparison::Same => Ok(1.),
-                    citron_core::TeamComparison::Different => Ok(-1.),
-                    citron_core::TeamComparison::None => unreachable!(),
-                }
-            }
+            Some(t) => match t.compare(&board.to_play()) {
+                citron_core::TeamComparison::Same => Ok(1.),
+                citron_core::TeamComparison::Different => Ok(-1.),
+                citron_core::TeamComparison::None => unreachable!(),
+            },
             None => Ok(match board.to_play() {
                 PlayableTeam::White => value[0] - value[2],
                 PlayableTeam::Black => value[2] - value[0],
