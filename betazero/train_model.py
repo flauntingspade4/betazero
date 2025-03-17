@@ -31,8 +31,8 @@ def load_and_train_dir(model, dir_name="./games"):
                 games = pickle.load(f)
                 prepare_games(games, inputs, p_outputs, v_outputs)
     dataset = tf.data.Dataset.from_tensor_slices((inputs, {"policy_output": p_outputs, "value_output": v_outputs })).shuffle(5000).batch(5)
-    optimizer = keras.optimizers.Adam(learning_rate=1e-4)
-    model.compile(optimizer=optimizer, loss={"policy_output": "categorical_crossentropy", "value_output": "categorical_crossentropy"}, metrics={"policy_output": ["mse", "accuracy"], "value_output": ["mse", "accuracy"]})
+    optimizer = keras.optimizers.Adam(learning_rate=3e-4)
+    model.compile(optimizer=optimizer, loss={"policy_output": "kl_divergence", "value_output": "kl_divergence"}, metrics={"policy_output": ["mse", "accuracy"], "value_output": ["mse", "accuracy"]})
     model.fit(dataset, epochs=15, shuffle=True)
     
 def load_and_train(model, file_name="latest.pickle"):
@@ -41,7 +41,7 @@ def load_and_train(model, file_name="latest.pickle"):
         games = pickle.load(f)
         prepare_games(games, inputs, p_outputs, v_outputs)
     dataset = tf.data.Dataset.from_tensor_slices((inputs, {"policy_output": p_outputs, "value_output": v_outputs })).shuffle(500).batch(5)
-    optimizer = keras.optimizers.Adam(learning_rate=1e-4)
+    optimizer = keras.optimizers.Adam(learning_rate=3e-4)
     model.compile(optimizer=optimizer, loss={"policy_output": "categorical_crossentropy", "value_output": "categorical_crossentropy"}, metrics={"policy_output": ["mse", "accuracy"], "value_output": ["mse", "accuracy"]})
 
     model.fit(dataset, epochs=5, shuffle=True)

@@ -51,7 +51,7 @@ class betazero_model(keras.Model):
         self.policy_batch_norm = keras.layers.BatchNormalization(axis=-1, name="policy_batch_norm")
         # self.policy_output = keras.layers.Dense(8 * 8 * 64, name="policy_output")
         self.policy_output = keras.layers.Conv2D(64, (3, 3), padding="same", name="policy_output")
-        self.policy_softmax = keras.layers.Softmax([1, 2, 3])
+        # self.policy_softmax = keras.layers.Softmax([1, 2, 3])
         # Value head
         self.value_conv = keras.layers.Conv2D(32, (3, 3), padding="same")
         self.value_flatten = keras.layers.Flatten()
@@ -80,7 +80,7 @@ class betazero_model(keras.Model):
         # v = self.value_relu(v)
         v = self.value_conv_to_vector(v)
         
-        return {"policy_output": self.policy_softmax(self.policy_output(p)), "value_output": self.value_softmax(self.value_output(v))}
+        return {"policy_output": self.policy_output(p), "value_output": self.value_softmax(self.value_output(v))}
 
 def generate_model():
     bz_model = betazero_model()
