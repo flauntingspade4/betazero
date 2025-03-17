@@ -50,7 +50,8 @@ def load_and_train(model, file_name="latest.pickle"):
 if __name__ == "__main__":
     model = load_model("model")
 
-    load_and_train_dir(model)
+    if len(sys.argv) == 1:
+        load_and_train_dir(model)
     
     while True:
         # board_spec = tf.TensorSpec([None, 8, 8, 12], tf.uint64, name="board")
