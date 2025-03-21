@@ -73,7 +73,7 @@ if __name__ == "__main__":
         moves = pickle.load(f)
         # prepare_moves(moves, inputs, outputs)
         generator = lambda: prepare_moves(moves)
-        output_signature = (tf.TensorSpec(shape=(1, 8 * 8 * 12), dtype=tf.float32), tf.TensorSpec(shape=(1, 8 * 8 * 12), dtype=tf.float32))
+        output_signature = (tf.TensorSpec(shape=(8 * 8 * 12), dtype=tf.float32), tf.TensorSpec(shape=(8 * 8 * 12), dtype=tf.float32))
     # print("{} inputs and {} outputs (Should be equal)".format(len(inputs), len(outputs)))
     dataset = tf.data.Dataset.from_generator(generator, output_signature=output_signature).shuffle(50000).batch(5)
     for d in dataset:
