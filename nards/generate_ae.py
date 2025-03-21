@@ -56,10 +56,12 @@ def generate_model():
     return model
     
 
-def prepare_moves(moves, inputs, outputs):
+def prepare_moves(moves):
     for move in moves:
-        inputs.append(move["board"]["data"])
-        outputs.append(move["board"]["data"])
+        # inputs.append(move["board"]["data"])
+        # outputs.append(move["board"]["data"])
+        data = move["board"]["data"]
+        yield data, data
 
 
 if __name__ == "__main__":
@@ -69,8 +71,9 @@ if __name__ == "__main__":
     with open("latest.pickle", "rb") as f:
         inputs, outputs = [], []
         moves = pickle.load(f)
-        prepare_moves(moves, inputs, outputs)
+        # prepare_moves(moves, inputs, outputs)
+        generator = lambda: prepare_moves(moves)
     print("{} inputs and {} outputs (Should be equal)".format(len(inputs), len(outputs)))
-    dataset = tf.data.Dataset.from_tensor_slices((inputs, outputs)).shuffle(50000).batch(5)
+    dataset = tf.data.Dataset.from_generator(prepare_moves).shuffle(50000).batch(5)
     print("Made dataset")
     model.fit(dataset, epochs=50)
