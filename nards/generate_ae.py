@@ -66,7 +66,7 @@ def generate_model():
 
 def prepare_moves(moves):
     for move in moves:
-        data = tf.constant(move["board"]["data"]).reshape((8, 8, 12))
+        data = tf.reshape(tf.constant(move["board"]["data"]), (8, 8, 12))
         # inputs.append(data)
         # outputs.append(data)
         yield data, data
