@@ -4,7 +4,7 @@ import sys
 import pickle
 
 
-LAYER_SIZES = [600, 400, 200, 100]
+LAYER_SIZES = [600, 400, 300, 200, 150]
 
 class Encoder(keras.Model):
     def __init__(self):
@@ -51,7 +51,7 @@ class AutoEncoder(keras.Model):
 
 def generate_model():
     model = AutoEncoder()
-    optimizer = keras.optimizers.Adam(learning_rate=0.0001)
+    optimizer = keras.optimizers.Adam(learning_rate=0.00005)
     model.compile(optimizer, loss="mse", metrics="accuracy")
     return model
     
