@@ -79,4 +79,7 @@ if __name__ == "__main__":
     # dataset = tf.data.Dataset.from_tensor_slices((inputs, outputs)).shuffle(70000).batch(32)
     # train_dataset, test_dataset = tf.keras.utils.split_dataset(dataset, left_size=0.9)
     # model.fit(train_dataset, epochs=50, validation_data=test_dataset, validation_freq=5)
-    model.fit(dataset, epochs=50)
+    model.fit(dataset, epochs=20)
+    
+    signatures = { "call": model.signatures["call"] }
+    model.save("model", save_format="tf", signatures=signatures)
