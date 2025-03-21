@@ -59,7 +59,7 @@ class AutoEncoder(keras.Model):
 
 def generate_model():
     model = AutoEncoder()
-    optimizer = keras.optimizers.Adam(learning_rate=0.0001)
+    optimizer = keras.optimizers.Adam(learning_rate=0.00005)
     model.compile(optimizer, loss="binary_crossentropy", metrics=["accuracy", "mse"])
     return model
     
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     # dataset = tf.data.Dataset.from_tensor_slices((inputs, outputs)).shuffle(70000).batch(32)
     train_dataset, test_dataset = tf.keras.utils.split_dataset(dataset, left_size=0.9)
     # model.fit(train_dataset, epochs=50, validation_data=test_dataset, validation_freq=5)
-    model.fit(train_dataset, epochs=10)
+    model.fit(train_dataset, epochs=20)
     
     model.evaluate(test_dataset)
     
