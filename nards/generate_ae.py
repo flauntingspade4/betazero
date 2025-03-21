@@ -56,12 +56,12 @@ def generate_model():
     return model
     
 
-def prepare_moves(moves, inputs, outputs):
+def prepare_moves(moves):
     for move in moves:
         data = tf.constant(move["board"]["data"])
-        inputs.append(data)
-        outputs.append(data)
-        # yield data, data
+        # inputs.append(data)
+        # outputs.append(data)
+        yield data, data
 
 
 if __name__ == "__main__":
@@ -69,16 +69,18 @@ if __name__ == "__main__":
     model = generate_model()
 
     with open("latest.pickle", "rb") as f:
-        inputs, outputs = [], []
+        # inputs, outputs = [], []
         moves = pickle.load(f)
-        prepare_moves(moves, inputs, outputs)
-        # generator = lambda: prepare_moves(moves)
-    # output_signature = (tf.TensorSpec(shape=(8 * 8 * 12), dtype=tf.float32), tf.TensorSpec(shape=(8 * 8 * 12), dtype=tf.float32))
-    # dataset = tf.data.Dataset.from_generator(generator, output_signature=output_signature).shuffle(100000).batch(32)
-    dataset = tf.data.Dataset.from_tensor_slices((inputs, outputs)).shuffle(70000).batch(32)
+        # prepare_moves(moves, inputs, outputs)
+        generator = lambda: prepare_moves(moves)
+    output_signature = (tf.TensorSpec(shape=(8 * 8 * 12), dtype=tf.float32), tf.TensorSpec(shape=(8 * 8 * 12), dtype=tf.float32))
+    dataset = tf.data.Dataset.from_generator(generator, output_signature=output_signature).shuffle(100000).batch(32)
+    # dataset = tf.data.Dataset.from_tensor_slices((inputs, outputs)).shuffle(70000).batch(32)
     train_dataset, test_dataset = tf.keras.utils.split_dataset(dataset, left_size=0.9)
     # model.fit(train_dataset, epochs=50, validation_data=test_dataset, validation_freq=5)
-    model.fit(dataset, epochs=20)
+    model.fit(train_dataset, epochs=10)
+    
+    model.evaluate(test_dataset)
     
     input_spec = tf.TensorSpec(shape=(None, 8 * 8 * 12), dtype=tf.uint64)
     signatures = { "call": model.call.get_concrete_function(input_spec) }
