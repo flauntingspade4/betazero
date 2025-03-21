@@ -9,7 +9,7 @@ LAYER_SIZES = [600, 400, 200, 100]
 class Encoder(keras.Model):
     def __init__(self):
         super(Encoder, self).__init__()
-        self.dense_layers = [keras.layers.Dense(x) for x in LAYER_SIZES]
+        self.dense_layers = [keras.layers.Dense(x, activation="relu") for x in LAYER_SIZES]
 
 
     @tf.function
@@ -25,7 +25,7 @@ class Decoder(keras.Model):
         # Don't include the first layer, as it's now the input
         included_layers = LAYER_SIZES[:-1].copy()
         included_layers.reverse()
-        self.dense_layers = [keras.layers.Dense(x) for x in included_layers]
+        self.dense_layers = [keras.layers.Dense(x, activation="relu") for x in included_layers]
         self.output_layer = keras.layers.Dense(8 * 8 * 12, activation="sigmoid")
 
 
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     # if len(sys.argv) > 1 and sys.argv[1] == "-n":
     model = generate_model()
 
-    with open("latest2.pickle", "rb") as f:
+    with open("latest.pickle", "rb") as f:
         inputs, outputs = [], []
         moves = pickle.load(f)
         prepare_moves(moves, inputs, outputs)
