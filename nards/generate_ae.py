@@ -81,7 +81,7 @@ if __name__ == "__main__":
         moves = pickle.load(f)
         # prepare_moves(moves, inputs, outputs)
         generator = lambda: prepare_moves(moves)
-    output_signature = (tf.TensorSpec(shape=(8 * 8 * 12), dtype=tf.float32), tf.TensorSpec(shape=(8 * 8 * 12), dtype=tf.float32))
+    output_signature = (tf.TensorSpec(shape=(8, 8, 12), dtype=tf.float32), tf.TensorSpec(shape=(8, 8, 12), dtype=tf.float32))
     dataset = tf.data.Dataset.from_generator(generator, output_signature=output_signature).shuffle(100000).batch(32)
     # dataset = tf.data.Dataset.from_tensor_slices((inputs, outputs)).shuffle(70000).batch(32)
     train_dataset, test_dataset = tf.keras.utils.split_dataset(dataset, left_size=0.9)
@@ -90,7 +90,7 @@ if __name__ == "__main__":
     
     model.evaluate(test_dataset)
     
-    input_spec = tf.TensorSpec(shape=(None, 8 * 8 * 12), dtype=tf.uint64)
+    input_spec = tf.TensorSpec(shape=(None, 8, 8, 12), dtype=tf.uint64)
     signatures = { "call": model.call.get_concrete_function(input_spec) }
     model.save("ae_model", save_format="tf", signatures=signatures)
     
