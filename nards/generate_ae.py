@@ -51,7 +51,7 @@ class AutoEncoder(keras.Model):
 
 def generate_model():
     model = AutoEncoder()
-    optimizer = keras.optimizers.Adam(learning_rate=0.00005)
+    optimizer = keras.optimizers.Adam(learning_rate=0.0001)
     model.compile(optimizer, loss="mse", metrics="accuracy")
     return model
     
@@ -81,5 +81,9 @@ if __name__ == "__main__":
     # model.fit(train_dataset, epochs=50, validation_data=test_dataset, validation_freq=5)
     model.fit(dataset, epochs=20)
     
-    signatures = { "call": model.signatures["call"] }
-    model.save("model", save_format="tf", signatures=signatures)
+    input_spec = tf.TensorSpec(shape=(8 * 8 * 12))
+    signatures = { "call": model.call.get_concrete_function(input_spec) }
+    model.save("ae_model", save_format="tf", signatures=signatures)
+    
+    signatures = { "call": model.encoder.call.get_concrete_function(input_spec) }
+    model.encoder.save("enc_model", save_format="tf", signatures=signatures)
