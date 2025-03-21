@@ -4,7 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-citron-core = { path = "../../citron/citron-core", features=["serde"] }
+citron-core = { path = "../../citron/citron-core", features=["serde", "nn_evaluation"] }
+pgnparse = "^0.1"
 
 rand = "0.9.0"
 

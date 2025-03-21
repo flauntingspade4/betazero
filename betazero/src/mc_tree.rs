@@ -1,13 +1,12 @@
-use std::time::Instant;
+// use std::time::Instant;
 
-use crate::{
-    positions::{board_to_network_input, move_to_probability_index},
-    BZSessionHandle, MCEdge, MCNode,
+use crate::{positions::move_to_probability_index, BZSessionHandle, MCEdge, MCNode};
+
+use citron_core::{
+    nn_util::board_to_network_input, piece::PieceKind, Board, MoveGen, PlayableTeam,
 };
 
-use citron_core::{piece::PieceKind, Board, MoveGen, PlayableTeam};
-
-use ndarray::Axis;
+// use ndarray::Axis;
 use petgraph::{
     graph::{EdgeReference, Graph, NodeIndex},
     visit::EdgeRef,

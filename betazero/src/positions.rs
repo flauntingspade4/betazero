@@ -2,45 +2,6 @@ use citron_core::{move_gen::Move, piece::PieceKind, Board, PlayableTeam, Positio
 use ndarray::{Array4, Axis};
 use std::sync::LazyLock;
 
-/// Calculates an array from the board that can
-/// then be used with [`BZSessionHandle`].
-/// If it is black's turn to play the board will
-/// be 'rotated', as if it were facing black
-pub fn board_to_network_input(board: &Board, played_team: PlayableTeam) -> Array4<u64> {
-    let mut array = Array4::zeros([1, 8, 8, 12]);
-
-    let mut piece_map = board.pieces();
-    // Iterate over each team and piece kind
-    for &team in PlayableTeam::teams().iter() {
-        for &piece_type in PieceKind::kinds().iter() {
-            // Add each piece for that team and kind to the array
-            while piece_map[team as usize][piece_type as usize] != 0 {
-                let bitmap =
-                    citron_core::magic::pop_lsb(&mut piece_map[team as usize][piece_type as usize]);
-                let position = Position::from_bitmap(1 << bitmap);
-
-                if played_team == PlayableTeam::White {
-                    array[[
-                        0,
-                        position.x() as usize,
-                        position.y() as usize,
-                        team as usize * 6 + piece_type as usize,
-                    ]] = 1;
-                } else {
-                    array[[
-                        0,
-                        7 - position.x() as usize,
-                        7 - position.y() as usize,
-                        (!team) as usize * 6 + piece_type as usize,
-                    ]] = 1;
-                }
-            }
-        }
-    }
-
-    array
-}
-
 pub fn network_input_to_board(input: &Array4<u64>, played_team: PlayableTeam) -> Board {
     let mut board = Board::EMPTY_BOARD;
     use citron_core::piece::Piece::*;

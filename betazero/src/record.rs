@@ -1,10 +1,10 @@
-use ndarray::Array4;
+use ndarray::{Array4, Axis};
 use serde::{Deserialize, Serialize};
 
-use citron_core::{move_gen::Move, Board, Team};
+use citron_core::{move_gen::Move, nn_util::board_to_network_input, Board, Team};
 use serde_with::serde_as;
 
-use crate::positions::{board_to_network_input, move_to_probability_index};
+use crate::positions::move_to_probability_index;
 
 /// A record of a game, saving the visit
 /// count for training
@@ -25,8 +25,9 @@ impl GameRecord {
     /// of moves and the number of times they were visited
     /// during rollouts
     pub fn add_move(&mut self, board: &Board, moves: &[(Move, usize, f32, f32)]) {
-        self.boards
-            .push(board_to_network_input(board, board.to_play()));
+        let input = board_to_network_input(board, board.to_play());
+        let input = input.insert_axis(Axis(0));
+        self.boards.push(input);
 
         let total: usize = moves
             .iter()
@@ -39,19 +40,8 @@ impl GameRecord {
 
         let mut probability_matrix = [[[0.; 64]; 8]; 8];
 
-        // println!(
-        // "Following moves for this board\n{}\nBoard is also {}\nMax visit count is {}",
-        // board,
-        // self.boards.last().unwrap(),
-        // total
-        // );
-
         for (move_probability, m) in moves {
             let (x, y, i) = move_to_probability_index(m, board.to_play());
-            // println!(
-            // "Move {} has visit count {} and visit probability {}",
-            // m, visit_count, move_probability
-            // );
 
             probability_matrix[x][y][i] = move_probability;
         }

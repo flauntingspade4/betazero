@@ -1,3 +1,7 @@
+use prepare::prepare_games;
+
+pub mod prepare;
+
 fn main() {
-    println!("Hello, world!");
+    prepare_games();
 }
