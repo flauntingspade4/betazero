@@ -1,37 +1,45 @@
 import tensorflow as tf
 import tf_keras as keras
-import sys
 import pickle
 
 
-LAYER_SIZES = [600, 400, 300, 200, 150]
+FILTERS = [128, 64, 32]
+
+LATENT_DIM = 150
 
 class Encoder(keras.Model):
     def __init__(self):
         super(Encoder, self).__init__()
-        self.dense_layers = [keras.layers.Dense(x, activation="relu") for x in LAYER_SIZES]
+        self.conv_layers = [keras.layers.Conv2D(x, (3, 3), padding="same", activation="relu") for x in FILTERS]
+        self.flatten = keras.layers.Flatten()
+        self.latent = keras.layers.Dense(LATENT_DIM, activation="relu")
 
 
     @tf.function
     def call(self, x):
-        for layer in self.dense_layers:
+        for layer in self.conv_layers:
             x = layer(x)
-        return x
+        print("Shape of x: {}".format(x.shape))
+        x = self.flatten(x)
+        print("Len after flatten {}".format(x.shape))
+        return self.latent(x)
 
 
 class Decoder(keras.Model):
     def __init__(self):
         super(Decoder, self).__init__()
-        # Don't include the first layer, as it's now the input
-        included_layers = LAYER_SIZES[:-1].copy()
+        self.dense_input = keras.layers.Dense(8 * 8 * 32)
+        included_layers = FILTERS.copy()
         included_layers.reverse()
-        self.dense_layers = [keras.layers.Dense(x, activation="relu") for x in included_layers]
-        self.output_layer = keras.layers.Dense(8 * 8 * 12, activation="sigmoid")
+        self.conv_layers = [keras.layers.Conv2D(x, (3, 3), padding="same", activation="relu") for x in included_layers]
+        self.output_layer = keras.layers.Conv2D(12, (3, 3), padding="same", activation="sigmoid")
 
 
     @tf.function
     def call(self, x):
-        for layer in self.dense_layers:
+        x = self.dense_input(x)
+        x = tf.reshape(x, (-1, 8, 8, FILTERS[-1]))
+        for layer in self.conv_layers:
             x = layer(x)
         return self.output_layer(x)
 
@@ -58,7 +66,7 @@ def generate_model():
 
 def prepare_moves(moves):
     for move in moves:
-        data = tf.constant(move["board"]["data"])
+        data = tf.constant(move["board"]["data"]).reshape((8, 8, 12))
         # inputs.append(data)
         # outputs.append(data)
         yield data, data
