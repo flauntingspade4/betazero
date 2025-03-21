@@ -60,7 +60,7 @@ class AutoEncoder(keras.Model):
 def generate_model():
     model = AutoEncoder()
     optimizer = keras.optimizers.Adam(learning_rate=0.0001)
-    model.compile(optimizer, loss="mse", metrics="accuracy")
+    model.compile(optimizer, loss="binary_crossentropy", metrics=["accuracy", "mse"])
     return model
     
 
