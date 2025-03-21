@@ -67,7 +67,7 @@ def prepare_moves(moves):
 if __name__ == "__main__":
     # if len(sys.argv) > 1 and sys.argv[1] == "-n":
     model = generate_model()
-    output_signature = (tf.TensorSpec(shape=(8 * 8 * 12), dtype=tf.float32), tf.TensorSpec(shape=(1, 8 * 8 * 12), dtype=tf.float32))
+    output_signature = (tf.TensorSpec(shape=(8 * 8 * 12), dtype=tf.float32), tf.TensorSpec(shape=(None, 8 * 8 * 12), dtype=tf.float32))
 
     with open("latest.pickle", "rb") as f:
         # inputs, outputs = [], []
