@@ -77,5 +77,6 @@ if __name__ == "__main__":
     # print("{} inputs and {} outputs (Should be equal)".format(len(inputs), len(outputs)))
     dataset = tf.data.Dataset.from_generator(generator, output_signature=output_signature).shuffle(50000).batch(5)
     # dataset = tf.data.Dataset.from_tensor_slices((inputs, outputs)).shuffle(70000).batch(32)
-    train_dataset, test_dataset = tf.keras.utils.split_dataset(dataset, left_size=0.9)
-    model.fit(train_dataset, epochs=50, validation_data=test_dataset, validation_freq=5)
+    # train_dataset, test_dataset = tf.keras.utils.split_dataset(dataset, left_size=0.9)
+    # model.fit(train_dataset, epochs=50, validation_data=test_dataset, validation_freq=5)
+    model.fit(dataset, epochs=50)
