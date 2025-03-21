@@ -75,7 +75,7 @@ if __name__ == "__main__":
         generator = lambda: prepare_moves(moves)
         output_signature = tf.TensorSpec(shape=(1, 8 * 8 * 12), dtype=tf.float32)
     # print("{} inputs and {} outputs (Should be equal)".format(len(inputs), len(outputs)))
-    dataset = tf.data.Dataset.from_generator(prepare_moves, output_signature=output_signature).shuffle(50000).batch(5)
+    dataset = tf.data.Dataset.from_generator(generator, output_signature=output_signature).shuffle(50000).batch(5)
     for d in dataset:
         print(d)
         break
