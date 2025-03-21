@@ -60,7 +60,7 @@ def prepare_moves(moves):
     for move in moves:
         # inputs.append(move["board"]["data"])
         # outputs.append(move["board"]["data"])
-        data = move["board"]["data"]
+        data = tf.constant(move["board"]["data"])
         yield data, data
 
 
