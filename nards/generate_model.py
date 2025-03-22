@@ -12,7 +12,7 @@ class NardsModel(keras.Model):
         self.encoder = encoder
         self.conv_layers = [keras.layers.Conv2D(x, (3, 3), padding="same", activation="relu") for x in FILTERS]
         self.flatten = keras.layers.Flatten()
-        self.output = keras.layers.Dense(3, activation="sigmoid")
+        self.output_layer = keras.layers.Dense(3, activation="sigmoid")
     
     @tf.function()
     def call(self, x):
@@ -22,7 +22,7 @@ class NardsModel(keras.Model):
         for layer in self.conv_layers:
             x = layer(x)
         x = self.flatten(x)
-        return self.output(x)
+        return self.output_layer(x)
     
 
 def prepare_moves(moves):
