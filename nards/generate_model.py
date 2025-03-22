@@ -22,7 +22,7 @@ class NardsModel(keras.Model):
     def call(self, x):
         x = self.encoder(x)
         x = self.dense_input(x)
-        x = self.dense_input(x)
+        x = self.dropout_input(x)
         # Reshape from the latent space
         x = tf.reshape(x, (-1, 8, 8, generate_ae.FILTERS[-1]))
         for layer in self.conv_layers:
