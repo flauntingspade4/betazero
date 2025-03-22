@@ -6,6 +6,7 @@ import sys
 
 FILTERS = [64, 128, 64, 32]
 
+
 class NardsModel(keras.Model):
     def __init__(self, encoder):
         super(NardsModel, self).__init__()
@@ -13,7 +14,7 @@ class NardsModel(keras.Model):
         self.conv_layers = [keras.layers.Conv2D(x, (3, 3), padding="same", activation="relu") for x in FILTERS]
         self.flatten = keras.layers.Flatten()
         self.output_layer = keras.layers.Dense(3, activation="sigmoid")
-    
+
     @tf.function()
     def call(self, x):
         x = self.encoder(x)
@@ -23,14 +24,15 @@ class NardsModel(keras.Model):
             x = layer(x)
         x = self.flatten(x)
         return self.output_layer(x)
-    
+
 
 def prepare_moves(moves):
     for move in moves:
+        print(move)
         input = tf.reshape(tf.constant(move["board"]["data"]), (8, 8, 12))
         output = tf.constant(move["won"])
         yield input, output
-        
+
 
 def train_model(model):
     with open("latest.pickle", "rb") as f:
@@ -55,7 +57,10 @@ if __name__ == "__main__":
         encoder = model.encoder
     else:
         encoder = keras.models.load_model("enc_model")
-    
+    encoder.trainable = False
     
     n_model = NardsModel(encoder)
+    optimizer = keras.optimizers.Adam(1e-4)
+    accuracy_metric = keras.metrics.BinaryAccuracy(threshold=0.7)
+    n_model.compile(optimizer, loss="binary_crossentropy", metrics=[accuracy_metric, "mse"])
     train_model(n_model)
