@@ -61,7 +61,7 @@ if __name__ == "__main__":
     encoder.trainable = False
     
     n_model = NardsModel(encoder)
-    optimizer = keras.optimizers.Adam(1e-4)
-    accuracy_metric = keras.metrics.BinaryAccuracy(threshold=0.7)
+    optimizer = keras.optimizers.Adam(1e-5)
+    accuracy_metric = keras.metrics.BinaryAccuracy(threshold=0.9)
     n_model.compile(optimizer, loss="binary_crossentropy", metrics=[accuracy_metric, "mse"])
     train_model(n_model)
