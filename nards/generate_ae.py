@@ -69,10 +69,7 @@ def prepare_moves(moves):
         yield data, data
 
 
-if __name__ == "__main__":
-    # if len(sys.argv) > 1 and sys.argv[1] == "-n":
-    model = generate_model()
-
+def train_model(model):
     with open("latest.pickle", "rb") as f:
         moves = pickle.load(f)
         generator = lambda: prepare_moves(moves)
@@ -89,3 +86,11 @@ if __name__ == "__main__":
     
     signatures = { "call": model.encoder.call.get_concrete_function(input_spec) }
     model.encoder.save("enc_model", save_format="tf", signatures=signatures)
+    return model
+
+
+if __name__ == "__main__":
+    # if len(sys.argv) > 1 and sys.argv[1] == "-n":
+    model = generate_model()
+    train_model(model)
+
