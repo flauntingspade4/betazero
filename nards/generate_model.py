@@ -10,7 +10,7 @@ class NardsModel(keras.Model):
     def __init__(self, encoder):
         super(NardsModel, self).__init__()
         self.encoder = encoder
-        self.conv_layers = [keras.layers.Conv2d(x, (3, 3), padding="same", activation="relu") for x in FILTERS]
+        self.conv_layers = [keras.layers.Conv2D(x, (3, 3), padding="same", activation="relu") for x in FILTERS]
         self.flatten = keras.layers.Flatten()
         self.output = keras.layers.Dense(3, activation="sigmoid")
     
