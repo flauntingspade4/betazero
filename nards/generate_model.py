@@ -58,3 +58,4 @@ if __name__ == "__main__":
     
     
     n_model = NardsModel(encoder)
+    train_model(n_model)
