@@ -4,7 +4,7 @@ import pickle
 import generate_ae
 import sys
 
-FILTERS = [64, 128, 64, 32]
+FILTERS = [256, 128, 64, 32]
 
 
 class NardsModel(keras.Model):
