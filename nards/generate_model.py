@@ -28,9 +28,8 @@ class NardsModel(keras.Model):
 
 def prepare_moves(moves):
     for move in moves:
-        print(move)
         input = tf.reshape(tf.constant(move["board"]["data"]), (8, 8, 12))
-        output = tf.constant(move["won"])
+        output = tf.constant(move["result"])
         yield input, output
 
 
