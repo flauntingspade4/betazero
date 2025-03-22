@@ -39,10 +39,10 @@ def train_model(model):
         generator = lambda: prepare_moves(moves)
     output_signature = (tf.TensorSpec(shape=(8, 8, 12), dtype=tf.float32), tf.TensorSpec(shape=(3,), dtype=tf.float32))
     dataset = tf.data.Dataset.from_generator(generator, output_signature=output_signature).shuffle(100000).batch(16)
-    train_dataset, test_dataset = tf.keras.utils.split_dataset(dataset, left_size=0.9)
-    model.fit(train_dataset, epochs=5)
+    # train_dataset, test_dataset = tf.keras.utils.split_dataset(dataset, left_size=0.9)
+    model.fit(dataset, epochs=5)
     
-    model.evaluate(test_dataset)
+    # model.evaluate(test_dataset)
     
     input_spec = tf.TensorSpec(shape=(None, 8, 8, 12), dtype=tf.float32)
     signatures = { "call": model.call.get_concrete_function(input_spec) }
