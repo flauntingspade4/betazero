@@ -93,4 +93,9 @@ if __name__ == "__main__":
     # if len(sys.argv) > 1 and sys.argv[1] == "-n":
     model = generate_model()
     train_model(model)
+    
+    input_spec = tf.TensorSpec(shape=(None, 8, 8, 12), dtype=tf.float32)
+    signatures = { "call": model.call.get_concrete_function(input_spec) }
+    model.save("ae_model", save_format="tf", signatures=signatures)
+
 
