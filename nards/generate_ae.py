@@ -26,7 +26,7 @@ class Encoder(keras.Model):
 class Decoder(keras.Model):
     def __init__(self):
         super(Decoder, self).__init__()
-        self.dense_input = keras.layers.Dense(8 * 8 * 32)
+        self.dense_input = keras.layers.Dense(8 * 8 * FILTERS[-1])
         included_layers = FILTERS.copy()
         included_layers.reverse()
         self.conv_layers = [keras.layers.Conv2D(x, (3, 3), padding="same", activation="relu") for x in included_layers]

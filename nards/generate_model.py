@@ -11,6 +11,7 @@ class NardsModel(keras.Model):
     def __init__(self, encoder):
         super(NardsModel, self).__init__()
         self.encoder = encoder
+        self.dense_input = keras.layers.Dense(8 * 8 * generate_ae.FILTERS[-1])
         self.conv_layers = [keras.layers.Conv2D(x, (3, 3), padding="same", activation="relu") for x in FILTERS]
         self.flatten = keras.layers.Flatten()
         self.output_layer = keras.layers.Dense(3, activation="sigmoid")
@@ -18,6 +19,7 @@ class NardsModel(keras.Model):
     @tf.function()
     def call(self, x):
         x = self.encoder(x)
+        x = self.dense_input(x)
         # Reshape from the latent space
         x = tf.reshape(x, (-1, 8, 8, generate_ae.FILTERS[-1]))
         for layer in self.conv_layers:
