@@ -2,6 +2,7 @@ import tensorflow as tf
 import tf_keras as keras
 import pickle
 import generate_ae
+import sys
 
 FILTERS = [64, 128, 64, 32]
 
@@ -48,7 +49,12 @@ def train_model(model):
 
 
 if __name__ == "__main__":
-    model = generate_ae.generate_model()
-    generate_ae.train_model(model)
+    if len(sys.argv) > 1 and sys.argv[1] == "new":
+        model = generate_ae.generate_model()
+        generate_ae.train_model(model)
+        encoder = model.encoder
+    else:
+        encoder = keras.models.load_model("enc_model")
     
-    n_model = NardsModel(model.encoder)
+    
+    n_model = NardsModel(encoder)
