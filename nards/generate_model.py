@@ -67,5 +67,5 @@ if __name__ == "__main__":
     n_model = NardsModel(encoder)
     optimizer = keras.optimizers.Adam(1e-5)
     accuracy_metric = keras.metrics.BinaryAccuracy(threshold=0.9)
-    n_model.compile(optimizer, loss="binary_crossentropy", metrics=[accuracy_metric, "mse"])
+    n_model.compile(optimizer, loss="binary_crossentropy", metrics=[accuracy_metric, "mse", "mae"])
     train_model(n_model)
