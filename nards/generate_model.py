@@ -60,7 +60,6 @@ def prepare_file(file_name):
     parsed = []
     data = pickle.load(open(file_name, "rb"))
     for position in data:
-        print("Adding position")
         parsed.append(tf.reshape(tf.constant(position["board"]["data"]), (8, 8, 12)))
     return tf.convert_to_tensor(parsed)
 
