@@ -89,7 +89,7 @@ def train_model(model):
         # generator = lambda: prepare_moves(moves)
     output_signature = ((tf.TensorSpec(shape=(8, 8, 12), dtype=tf.float32), tf.TensorSpec(shape=(8, 8, 12), dtype=tf.float32)), tf.TensorSpec(shape=(2,), dtype=tf.float32))
     # dataset = tf.data.Dataset.from_generator(generator, output_signature=output_signature).shuffle(100000).batch(16)
-    dataset = tf.data.Dataset.from_generator(data_generator, output_signature=output_signature, args=files).take(1_000_000).batch(16)
+    dataset = tf.data.Dataset.from_generator(data_generator, output_signature=output_signature, args=files).take(100_000).batch(16)
     train_dataset, test_dataset = tf.keras.utils.split_dataset(dataset, left_size=0.9)
     model.fit(train_dataset, epochs=5)
     
