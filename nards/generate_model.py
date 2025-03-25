@@ -64,11 +64,7 @@ def prepare_file(file_name):
     return tf.convert_to_tensor(parsed)
 
 
-class PositionSequence(keras.utils.Sequence):
-    def __init__(self):
-        filenames = ["white_won", "white_lost", "black_lost", "black_won"]
-        self.files = [prepare_file(p) for p in filenames]
-def __getitem__(self):
+def data_generator(self):
     while True:
         first_index = random.randint(0, 3)
         if first_index > 1:
@@ -85,19 +81,21 @@ def __getitem__(self):
 
 
 def train_model(model):
+    filenames = ["white_won", "white_lost", "black_lost", "black_won"]
+    files = [prepare_file(p) for p in filenames]
+
     # with open("latest.pickle", "rb") as f:
         # moves = pickle.load(f)
         # generator = lambda: prepare_moves(moves)
-    # output_signature = (tf.TensorSpec(shape=(8, 8, 12), dtype=tf.float32), tf.TensorSpec(shape=(3,), dtype=tf.float32))
+    output_signature = ((tf.TensorSpec(shape=(8, 8, 12), dtype=tf.float32), tf.TensorSpec(shape=(8, 8, 12), dtype=tf.float32)), tf.TensorSpec(shape=(2,), dtype=tf.float32))
     # dataset = tf.data.Dataset.from_generator(generator, output_signature=output_signature).shuffle(100000).batch(16)
-    # train_dataset, test_dataset = tf.keras.utils.split_dataset(dataset, left_size=0.9)
-    # model.fit(dataset, epochs=5)
-    generator = PositionSequence()
-    dataset = tf.data.Dataset.from_generator(generator, )
+    dataset = tf.data.Dataset.from_generator(data_generator, output_signature=output_signature, args=files).take(1_000_000).batch(16)
+    train_dataset, test_dataset = tf.keras.utils.split_dataset(dataset, left_size=0.9)
+    model.fit(train_dataset, epochs=5)
     
-    # model.evaluate(test_dataset)
+    model.evaluate(test_dataset)
     
-    input_spec = tf.TensorSpec(shape=(None, 8, 8, 12), dtype=tf.float32)
+    input_spec = (tf.TensorSpec(shape=(None, 8, 8, 12), dtype=tf.float32), tf.TensorSpec(shape=(None, 8, 8, 12), dtype=tf.float32))
     signatures = { "call": model.call.get_concrete_function(input_spec) }
     model.save("ae_model", save_format="tf", signatures=signatures)
 
