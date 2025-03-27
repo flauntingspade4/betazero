@@ -3,15 +3,15 @@ import tf_keras as keras
 import pickle
 
 
-FILTERS = [600, 400, 200]
+FILTERS = [256, 256, 128]
 
 LATENT_DIM = 100
 
 class Encoder(keras.Model):
     def __init__(self):
         super(Encoder, self).__init__()
-        # self.conv_layers = [keras.layers.Conv2D(x, (3, 3), padding="same", activation="relu") for x in FILTERS]
-        self.conv_layers = [keras.layers.Dense(x, activation="relu") for x in FILTERS]
+        self.conv_layers = [keras.layers.Conv2D(x, (3, 3), padding="same", activation="relu") for x in FILTERS]
+        # self.conv_layers = [keras.layers.Dense(x, activation="relu") for x in FILTERS]
         self.flatten = keras.layers.Flatten()
         self.latent = keras.layers.Dense(LATENT_DIM, activation="relu")
 
