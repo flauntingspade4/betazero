@@ -8,10 +8,13 @@ import random
 UNITS = [256, 128, 64]
 leaky = keras.layers.LeakyReLU()
 L2_REGULARIZATION = 0.0001
+UNITS = [256, 128, 64]
+leaky = keras.layers.LeakyReLU()
+L2_REGULARIZATION = 0.0001
 
 
 class NardsModel(keras.Model):
-    def __init__(self, encoder):
+    def __init__(self):
         super(NardsModel, self).__init__()
         self.encoder = encoder
         self.concat = keras.layers.Concatenate()

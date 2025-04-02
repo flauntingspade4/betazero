@@ -5,6 +5,7 @@ import random
 
 
 FILTERS = [256, 256, 128]
+FILTERS = [256, 256, 128]
 
 LATENT_DIM = 100
 
@@ -13,6 +14,7 @@ class Encoder(keras.Model):
     def __init__(self):
         super(Encoder, self).__init__()
         self.conv_layers = [keras.layers.Conv2D(x, (3, 3), padding="same", activation="relu") for x in FILTERS]
+        # self.conv_layers = [keras.layers.Dense(x, activation="relu") for x in FILTERS]
         # self.conv_layers = [keras.layers.Dense(x, activation="relu") for x in FILTERS]
         self.flatten = keras.layers.Flatten()
         self.latent = keras.layers.Dense(LATENT_DIM, activation="relu")
@@ -54,10 +56,10 @@ class Decoder(keras.Model):
     @tf.function
     def call(self, x):
         x = self.dense_input(x)
-        x = tf.reshape(x, (-1, 8, 8, FILTERS[-1]))
+        # x = tf.reshape(x, (-1, 8, 8, FILTERS[-1]))
         for layer in self.conv_layers:
             x = layer(x)
-        return self.output_layer(x)
+        return tf.reshape(self.output_layer(x), (-1, 8, 8, 12))
 
 
 class AutoEncoder(keras.Model):
@@ -101,6 +103,7 @@ def train_model(model):
     # train_dataset, test_dataset = tf.keras.utils.split_dataset(dataset, left_size=0.9)
     model.fit(dataset, epochs=20)
     
+    # model.evaluate(test_dataset)
     # model.evaluate(test_dataset)
     
     input_spec = tf.TensorSpec(shape=(None, 8, 8, 12), dtype=tf.float32)
