@@ -204,6 +204,7 @@ dependencies = [
  "ndarray",
  "rand 0.9.0",
  "serde",
+ "tensorflow",
 ]
 
 [[package]]

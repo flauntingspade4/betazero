@@ -5,7 +5,7 @@ use std::{
 
 use ndarray::Array3;
 
-use citron_core::{nn_util::board_to_network_input, Board, Team};
+use citron_core::{nn::board_to_network_input, Board, Team};
 use pgnparse::parser::parse_pgn_to_rust_struct;
 use serde::{Deserialize, Serialize};
 use serde_pickle::SerOptions;
@@ -252,6 +252,6 @@ fn square_to_position(square: Square) -> Position {
 
 #[derive(Serialize, Deserialize)]
 pub struct AERecord {
-    board: Array3<u64>,
+    board: Array3<f32>,
     result: [f32; 3],
 }
