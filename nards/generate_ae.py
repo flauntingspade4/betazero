@@ -5,17 +5,14 @@ import random
 
 
 FILTERS = [256, 256, 128]
-FILTERS = [256, 256, 128]
-
 LATENT_DIM = 100
+
 
 @keras.saving.register_keras_serializable(package="nards")
 class Encoder(keras.Model):
     def __init__(self):
         super(Encoder, self).__init__()
         self.conv_layers = [keras.layers.Conv2D(x, (3, 3), padding="same", activation="relu") for x in FILTERS]
-        # self.conv_layers = [keras.layers.Dense(x, activation="relu") for x in FILTERS]
-        # self.conv_layers = [keras.layers.Dense(x, activation="relu") for x in FILTERS]
         self.flatten = keras.layers.Flatten()
         self.latent = keras.layers.Dense(LATENT_DIM, activation="relu")
 
@@ -26,19 +23,7 @@ class Encoder(keras.Model):
             x = layer(x)
         x = self.flatten(x)
         return self.latent(x)
-    
-    """def get_config(self):
-        config = super(Encoder, self).get_config()
-        config.update({
-            "filters": FILTERS,
-            "latent_dim": LATENT_DIM,
-        })
-        return config
 
-    @classmethod
-    def from_config(cls, config):
-        return cls()"""
-    
 
 class Decoder(keras.Model):
     def __init__(self):
@@ -46,10 +31,7 @@ class Decoder(keras.Model):
         self.dense_input = keras.layers.Dense(8 * 8 * FILTERS[-1])
         included_layers = FILTERS.copy()
         included_layers.reverse()
-        # print(included_layers)
         self.conv_layers = [keras.layers.Conv2D(x, (3, 3), padding="same", activation="relu") for x in included_layers]
-        # self.conv_layers = [keras.layers.Dense(x, activation="relu") for x in included_layers]
-        # self.output_layer = keras.layers.Conv2D(12, (3, 3), padding="same", activation="sigmoid")
         self.output_layer = keras.layers.Dense(12, activation="sigmoid")
 
 
