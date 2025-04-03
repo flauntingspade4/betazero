@@ -5,16 +5,14 @@ import generate_ae
 import sys
 import random
 
-UNITS = [256, 128, 64]
-leaky = keras.layers.LeakyReLU()
-L2_REGULARIZATION = 0.0001
+
 UNITS = [256, 128, 64]
 leaky = keras.layers.LeakyReLU()
 L2_REGULARIZATION = 0.0001
 
 
 class NardsModel(keras.Model):
-    def __init__(self):
+    def __init__(self, encoder):
         super(NardsModel, self).__init__()
         self.encoder = encoder
         self.concat = keras.layers.Concatenate()
@@ -88,15 +86,7 @@ def train_model(model):
     lost_games = []
     prepare_file("wonsmall.pickle", won_games)
     prepare_file("lostsmall.pickle", lost_games)
-    # filenames = ["white_won", "white_lost", "black_lost", "black_won"]
-    # files = [prepare_file(p) for p in filenames]
-    # print("Output: {}".format(model(tf.constant([[won_games[0]], [lost_games[0]]]))))
-
-    # with open("latest.pickle", "rb") as f:
-        # moves = pickle.load(f)
-        # generator = lambda: prepare_moves(moves)
     output_signature = ((tf.TensorSpec(shape=(8, 8, 12), dtype=tf.float32), tf.TensorSpec(shape=(8, 8, 12), dtype=tf.float32)), tf.TensorSpec(shape=(2,), dtype=tf.float32))
-    # dataset = tf.data.Dataset.from_generator(generator, output_signature=output_signature).shuffle(100000).batch(16)
     dataset = tf.data.Dataset.from_generator(data_generator, output_signature=output_signature, args=[won_games, lost_games]).take(320_000).batch(32).prefetch(tf.data.AUTOTUNE)
     for _ in range(100):
         model.fit(dataset, epochs=10)
@@ -107,8 +97,8 @@ def train_model(model):
         signatures = { "call": model.call.get_concrete_function(call_spec), "call_encoded": model.call_encoded.get_concrete_function(call_encoded_spec), "encode": model.encode.get_concrete_function(encode_spec) }
         model.save("model", save_format="tf", signatures=signatures)
 
-        test_dataset = tf.data.Dataset.from_generator(data_generator, output_signature=output_signature, args=[won_games, lost_games]).take(10_000).batch(16)
-        model.evaluate(test_dataset)
+        # test_dataset = tf.data.Dataset.from_generator(data_generator, output_signature=output_signature, args=[won_games, lost_games]).take(10_000).batch(16)
+        # model.evaluate(test_dataset)
         # input_spec = (tf.TensorSpec(shape=(None, 8, 8, 12), dtype=tf.float32))
         # signatures = { "call": model.encoder.signatures["call"] }
         # model.encoder.save("enc_model", save_format="tf", signatures=signatures)
