@@ -1,4 +1,4 @@
-use betazero_nn::move_to_probability_index;
+// use crate::Position;
 use citron_core::{move_gen::Move, piece::PieceKind, PlayableTeam, Position};
 
 // todo probably some more tests

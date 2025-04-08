@@ -60,40 +60,44 @@ class NardsModel(keras.Model):
 
 
 def prepare_file(file_name, parsed):
+    print("Starting preparing")
     data = pickle.load(open(file_name, "rb"))
     print("Doing file with {} entries".format(len(data)))
     for i, position in enumerate(data):
-        # if i < 359000:
-            # continue
-        parsed.append(tf.reshape(tf.constant(position["board"]["data"], dtype=tf.float32), (8, 8, 12)))
+        if i % 50_000 == 0:
+            print("Doing {}th entry in file".format(i))
+        # print(position)
+        # if i > 200_000:
+            # break
+        parsed.append(tf.reshape(tf.constant(position["data"], dtype=tf.float32), (8, 8, 14)))
     print("Done file")
 
-
-def data_generator(won, lost):
+results = [tf.constant([1.0, 0.0], dtype=tf.float32), tf.constant([0.0, 1.0], dtype=tf.float32)]
+def data_generator(white_won, black_won):
     while True:
-        won_index = random.randrange(len(won))
-        lost_index = random.randrange(len(lost))
+        won_index = random.randrange(len(white_won))
+        lost_index = random.randrange(len(black_won))
         if bool(random.getrandbits(1)):
-            result = tf.constant([1.0, 0.0], dtype=tf.float32)
-            yield (won[won_index], lost[lost_index]), result
+            yield (white_won[won_index], black_won[lost_index]), results[0]
+            # yield (lost[lost_index], won[won_index]), results[1]
         else:
-            result = tf.constant([0.0, 1.0], dtype=tf.float32)
-            yield (lost[lost_index], won[won_index]), result
+            yield (black_won[lost_index], white_won[won_index]), results[1]
+            # yield (won[won_index], lost[lost_index]), results[0]
 
 
 def train_model(model):
-    won_games = []
-    lost_games = []
-    prepare_file("wonsmall.pickle", won_games)
-    prepare_file("lostsmall.pickle", lost_games)
-    output_signature = ((tf.TensorSpec(shape=(8, 8, 12), dtype=tf.float32), tf.TensorSpec(shape=(8, 8, 12), dtype=tf.float32)), tf.TensorSpec(shape=(2,), dtype=tf.float32))
-    dataset = tf.data.Dataset.from_generator(data_generator, output_signature=output_signature, args=[won_games, lost_games]).take(320_000).batch(32).prefetch(tf.data.AUTOTUNE)
+    white_won = []
+    black_won = []
+    prepare_file("white_won_teams.pickle", white_won)
+    prepare_file("black_won_teams.pickle", black_won)
+    output_signature = ((tf.TensorSpec(shape=(8, 8, 14), dtype=tf.float32), tf.TensorSpec(shape=(8, 8, 14), dtype=tf.float32)), tf.TensorSpec(shape=(2,), dtype=tf.float32))
+    dataset = tf.data.Dataset.from_generator(data_generator, output_signature=output_signature, args=[white_won, black_won]).take(320_000).batch(32).prefetch(tf.data.AUTOTUNE)
     for _ in range(100):
         model.fit(dataset, epochs=10)
-
-        call_spec = (tf.TensorSpec(shape=(None, 8, 8, 12), dtype=tf.float32), tf.TensorSpec(shape=(None, 8, 8, 12), dtype=tf.float32))
+        board_spec = tf.TensorSpec(shape=(None, 8, 8, 14), dtype=tf.float32)
+        call_spec = (board_spec, board_spec)
         call_encoded_spec = (tf.TensorSpec(shape=(None, generate_ae.LATENT_DIM), dtype=tf.float32), tf.TensorSpec(shape=(None, generate_ae.LATENT_DIM), dtype=tf.float32))
-        encode_spec = tf.TensorSpec(shape=(None, 8, 8, 12), dtype=tf.float32)
+        encode_spec = (board_spec)
         signatures = { "call": model.call.get_concrete_function(call_spec), "call_encoded": model.call_encoded.get_concrete_function(call_encoded_spec), "encode": model.encode.get_concrete_function(encode_spec) }
         model.save("model", save_format="tf", signatures=signatures)
 
@@ -118,6 +122,7 @@ if __name__ == "__main__":
     encoder.compile(optimizer, loss="categorical_crossentropy", metrics=[accuracy_metric, "mse"])
     
     n_model = NardsModel(encoder)
+    # n_model = keras.models.load_model("model")
     optimizer = keras.optimizers.Adam(0.001)
     n_model.compile(optimizer, loss="categorical_crossentropy", metrics=[accuracy_metric, "mae", "mse"])
 

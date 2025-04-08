@@ -5,24 +5,28 @@ use std::{
 
 use ndarray::Array3;
 
-use citron_core::{nn::board_to_network_input, Board, Team};
+use citron_core::{
+    nn::{add_move_information_to_nn_input, board_to_network_input},
+    Board, PlayableTeam, Team,
+};
 use pgnparse::parser::parse_pgn_to_rust_struct;
+use rand::seq::{IndexedRandom, IteratorRandom};
 use serde::{Deserialize, Serialize};
 use serde_pickle::SerOptions;
-use tfrecord::{Example, Feature, RecordWriter};
 
 // const POSITIONS_PER_FILE: usize = 10000;
 
 pub fn prepare_games() {
     let input = read_to_string(r"games\CCRL.40-2.Archive.[2165313].pgn").unwrap();
     let mut input = input.as_str();
+    let mut rng = rand::rng();
 
     // println!("Loaded game");
 
-    let mut won = Vec::new();
-    let mut lost = Vec::new();
+    let mut white_won = Vec::new();
+    let mut black_won = Vec::new();
 
-    for i in 0.. {
+    for i in 0..1_000_000 {
         if i % 100 == 0 {
             println!("On game {i}");
         }
@@ -35,82 +39,78 @@ pub fn prepare_games() {
             break;
         };
 
-        let won_team = match output.get_header("Result").as_str() {
-            "1-0" => Team::White,
-            "0-1" => Team::Black,
+        let (won_team, skip) = match output.get_header("Result").as_str() {
+            "1-0" => (PlayableTeam::White, 0),
+            "0-1" => (PlayableTeam::Black, 1),
             "1/2-1/2" => continue,
             a => {
                 println!("Incorrect victory team {a}");
                 break;
             }
         };
-        for played_move in &output.moves {
+
+        for played_move in output
+            .moves
+            .iter()
+            // .skip(skip)
+            // .step_by(2)
+            .choose_multiple(&mut rng, 2)
+        {
             let board = Board::from_fen(&played_move.fen_before).unwrap();
+            // println!(
+            //     "{won_team} won. Adding board from fen \"{}\"\n{}",
+            //     &played_move.fen_before, board
+            // );
             // println!("{board}");
-            let r = board_to_network_input(&board, board.to_play());
+            let mut r = board_to_network_input(&board, PlayableTeam::White);
+            add_move_information_to_nn_input(&board, &mut r);
             // println!("{:?}", r);
             // println!("{:?}", r.clone().into_raw_vec());
+            // ඞ ඞ ඞ
 
-            match won_team.compare(&board.to_play().into()) {
-                citron_core::TeamComparison::Same => won.push(r),
-                citron_core::TeamComparison::Different => lost.push(r),
-                citron_core::TeamComparison::None => panic!("How the fridge??"),
+            match won_team {
+                PlayableTeam::White => white_won.push(r),
+                PlayableTeam::Black => black_won.push(r),
             }
 
-            break;
+            // break;
         }
     }
-    // if white_won.len() > POSITIONS_PER_FILE {
-    //     println!("Writing {} white_won positions", white_won.len());
-    //     write_file(&format!(r"white_won\file"), &mut white_won);
-    //     white_won.clear();
-    // }
-
-    // if white_lost.len() > POSITIONS_PER_FILE {
-    //     println!("Writing {} white_lost positions", white_lost.len());
-    //     write_file(&format!(r"white_lost\file"), &mut white_lost);
-    //     white_lost.clear();
-    // }
-
-    // if black_won.len() > POSITIONS_PER_FILE {
-    //     println!("Writing {} black_won positions", black_won.len());
-    //     write_file(&format!(r"black_won\file"), &mut black_won);
-    //     black_won.clear();
-    // }
-
-    // if black_lost.len() > POSITIONS_PER_FILE {
+    write_file("white_won_teams.pickle", &mut white_won);
+    write_file("black_won_teams.pickle", &mut black_won);
     //     println!("Writing {} black_lost positions", black_lost.len());
     //     write_file(&format!(r"black_lost\file"), &mut black_lost);
     //     black_lost.clear();
     // }
 
-    let mut won_writer = RecordWriter::create("won.tfrecord").unwrap();
+    // let mut won_writer = RecordWriter::create("won.tfrecord").unwrap();
 
-    for won_position in won {
-        let board_feature = Feature::from_f32_list(won_position.into_raw_vec());
+    // for won_position in white_won {
+    //     let board_feature = Feature::from_f32_list(won_position.into_raw_vec());
 
-        let example = vec![("board".into(), board_feature)]
-            .into_iter()
-            .collect::<Example>();
+    //     let example = vec![("board".into(), board_feature)]
+    //         .into_iter()
+    //         .collect::<Example>();
 
-        won_writer.send(example).unwrap();
-    }
+    //     won_writer.send(example).unwrap();
+    // }
 
-    let mut lost_writer = RecordWriter::create("won.tfrecord").unwrap();
+    // let mut lost_writer = RecordWriter::create("won.tfrecord").unwrap();
 
-    for lost_position in lost {
-        let board_feature = Feature::from_f32_list(lost_position.into_raw_vec());
+    // for lost_position in black_won {
+    //     let board_feature = Feature::from_f32_list(lost_position.into_raw_vec());
 
-        let example = vec![("board".into(), board_feature)]
-            .into_iter()
-            .collect::<Example>();
+    //     let example = vec![("board".into(), board_feature)]
+    //         .into_iter()
+    //         .collect::<Example>();
 
-        lost_writer.send(example).unwrap();
-    }
+    //     lost_writer.send(example).unwrap();
+    // }
 }
 
-fn write_file(path: &str, records: &mut Vec<AERecord>) {
+fn write_file(path: &str, records: &mut Vec<Array3<f32>>) {
     let f = File::create(path).unwrap();
+    println!("Writing {} records to {}", records.len(), path);
     let mut f = BufWriter::new(f);
     serde_pickle::to_writer(&mut f, &records, SerOptions::new()).unwrap();
 }

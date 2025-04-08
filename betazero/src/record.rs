@@ -1,7 +1,7 @@
 use ndarray::{Array4, Axis};
 use serde::{Deserialize, Serialize};
 
-use citron_core::{move_gen::Move, nn_util::board_to_network_input, Board, Team};
+use citron_core::{move_gen::Move, nn::board_to_network_input, Board, Team};
 use serde_with::serde_as;
 
 use crate::positions::move_to_probability_index;
@@ -9,7 +9,7 @@ use crate::positions::move_to_probability_index;
 /// A record of a game, saving the visit
 /// count for training
 pub struct GameRecord {
-    boards: Vec<Array4<u64>>,
+    boards: Vec<Array4<f32>>,
     moves: Vec<[[[f32; 64]; 8]; 8]>,
 }
 
@@ -88,7 +88,7 @@ impl GameRecord {
 #[derive(Deserialize, Serialize, Debug)]
 pub struct BoardRecord {
     // #[serde_as(as = "[[[_; 12]; 8]; 8]")]
-    pub board: Array4<u64>,
+    pub board: Array4<f32>,
     #[serde_as(as = "[[[_; 64]; 8]; 8]")]
     pub moves: [[[f32; 64]; 8]; 8],
     pub won: [f32; 3],

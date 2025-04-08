@@ -2,9 +2,7 @@
 
 use crate::{positions::move_to_probability_index, BZSessionHandle, MCEdge, MCNode};
 
-use citron_core::{
-    nn_util::board_to_network_input, piece::PieceKind, Board, MoveGen, PlayableTeam,
-};
+use citron_core::{nn::board_to_network_input, MoveGen, PlayableTeam};
 
 // use ndarray::Axis;
 use petgraph::{
@@ -175,6 +173,8 @@ impl MCTree {
 
 #[test]
 fn speed_comparison() {
+    use std::time::Instant;
+
     let handle = BZSessionHandle::load(None);
 
     let board = Board::new();

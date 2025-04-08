@@ -57,7 +57,7 @@ impl BZSessionHandle {
         Self { graph, bundle }
     }
 
-    pub fn call(&self, input: Tensor<u64>) -> Result<(Tensor<f32>, Tensor<f32>), Status> {
+    pub fn call(&self, input: Tensor<f32>) -> Result<(Tensor<f32>, Tensor<f32>), Status> {
         // debug_assert_eq!(
         // input.shape(),
         // Shape::new(Some(vec![None, Some(8), Some(8), Some(12)]))

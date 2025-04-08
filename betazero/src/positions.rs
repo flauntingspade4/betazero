@@ -2,7 +2,7 @@ use citron_core::{move_gen::Move, piece::PieceKind, Board, PlayableTeam, Positio
 use ndarray::{Array4, Axis};
 use std::sync::LazyLock;
 
-pub fn network_input_to_board(input: &Array4<u64>, played_team: PlayableTeam) -> Board {
+pub fn network_input_to_board(input: &Array4<f32>, played_team: PlayableTeam) -> Board {
     let mut board = Board::EMPTY_BOARD;
     use citron_core::piece::Piece::*;
 
@@ -12,7 +12,7 @@ pub fn network_input_to_board(input: &Array4<u64>, played_team: PlayableTeam) ->
             // println!("yi {}, Y = {:?}", yi, y);
             for (p_index, present) in y.columns().into_iter().enumerate() {
                 // println!("Now on p_index {:?}", p_index);
-                if present.get(0) == Some(&1) {
+                if present.get(0) == Some(&1.) {
                     let true_p_index = if played_team == PlayableTeam::Black {
                         if p_index > 5 {
                             p_index - 6
@@ -52,6 +52,8 @@ pub fn network_input_to_board(input: &Array4<u64>, played_team: PlayableTeam) ->
 
 #[test]
 fn network_input_to_board_test() {
+    use citron_core::nn::board_to_network_input;
+
     let handle = crate::session_handle::BZSessionHandle::load(None);
     let board = Board::from_fen("b3k2b/8/8/3n4/1B4n1/2PP4/4PPP1/4K2B w - - 0 1").unwrap();
     let network_input = board_to_network_input(&board, PlayableTeam::White);
@@ -60,7 +62,8 @@ fn network_input_to_board_test() {
         .unwrap();
 
     println!("{}\n{}", board, network_output.1);
-    let new_board = network_input_to_board(&network_input, PlayableTeam::White);
+    let new_board =
+        network_input_to_board(&network_input.insert_axis(Axis(0)), PlayableTeam::White);
     let network_input = board_to_network_input(&new_board, PlayableTeam::Black);
 
     let network_output = handle
@@ -202,7 +205,7 @@ fn flip_probability_index() {
 
 #[test]
 fn flip_probability_from_network() {
-    use citron_core::Board;
+    use citron_core::{nn::board_to_network_input, Board};
     let handle = crate::session_handle::BZSessionHandle::load(None);
 
     let board = &Board::from_fen("k7/2n5/1n6/3r4/4R3/6N1/5N2/7K w - - 0 1").unwrap();
