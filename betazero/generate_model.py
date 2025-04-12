@@ -49,18 +49,15 @@ class betazero_model(keras.Model):
         # Policy head
         self.policy_conv = keras.layers.Conv2D(FILTERS, (3, 3), padding="same", name="policy_conv")
         self.policy_batch_norm = keras.layers.BatchNormalization(axis=-1, name="policy_batch_norm")
-        # self.policy_output = keras.layers.Dense(8 * 8 * 64, name="policy_output")
         self.policy_output = keras.layers.Conv2D(64, (3, 3), padding="same", name="policy_output")
         # self.policy_softmax = keras.layers.Softmax([1, 2, 3])
         # Value head
         self.value_conv = keras.layers.Conv2D(32, (3, 3), padding="same")
         self.value_flatten = keras.layers.Flatten()
         self.value_conv_to_vector = keras.layers.Dense(128, activation="relu")
-        # self.value_conv_to_vector = keras.layers.Conv2D(128, (1, 1), padding="same")
-        self.value_output = keras.layers.Dense(3, name="value_output")
-        self.value_softmax = keras.layers.Softmax()
+        self.value_output = keras.layers.Dense(3, name="value_output", activation="softmax")
 
-    @tf.function(input_signature=[tf.TensorSpec(shape=[None, 8, 8, 12], dtype=tf.uint64, name="input_1")])
+    @tf.function(input_signature=[tf.TensorSpec(shape=[None, 8, 8, 12], dtype=tf.float32, name="input_1")])
     def call(self, board):
         # Transform data to correct shape and type
         x = tf.cast(board, tf.float32)
@@ -79,44 +76,24 @@ class betazero_model(keras.Model):
         # v = self.value_relu(v)
         v = self.value_conv_to_vector(v)
         
-        return {"policy_output": self.policy_output(p), "value_output": self.value_softmax(self.value_output(v))}
+        return {"policy_output": self.policy_output(p), "value_output": self.value_output(v)}
 
 def generate_model():
     bz_model = betazero_model()
 
     # print(board)
     # bz_model.build(board_spec)
-    bz_model.compile(optimizer="adam", loss={"policy_output": "categorical_crossentropy", "value_output": "categorical_crossentropy"}, metrics={"policy_output": "mse", "value_output": "accuracy"})
-    # bz_model.compile(optimizer="adam", loss=["mse", "binary_crossentropy"], metrics=["MSE", "accuracy"])
+    optimizer = keras.optimizers.Adam(learning_rate=1e-5)
+    bz_model.compile(optimizer=optimizer, loss={"policy_output": "categorical_crossentropy", "value_output": "categorical_crossentropy"}, metrics={"policy_output": ["mse", "accuracy"], "value_output": ["mse", "accuracy"]})
 
-    board_spec = tf.TensorSpec([None, 8, 8, 12], tf.uint64, name="input_1")
-        # call_concrete = model.__call__.get_concrete_function(tf.TensorSpec([None, 8, 8, 12], tf.uint64, name="input_1"))
+    board_spec = tf.TensorSpec([None, 8, 8, 12], tf.float32, name="input_1")
     
     board = [[[[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] for _ in range(8)] for i in range(8)]]
-    input = tf.constant(board, dtype=tf.uint64)
-    res = bz_model(input)
-
-    print(str(res))
-
-    # bz_model.export("model", input_signatures=bz_model.call.get_concrete_function(tf.TensorSpec(shape=[8, 8, 12], dtype=tf.uint64)))
-    # bz_model.export("model")
+    input = tf.constant(board, dtype=tf.float32)
+    _ = bz_model(input)
 
     # Call signatures
     call_concrete = bz_model.call.get_concrete_function(board_spec)
-    # res = call_concrete(input)
-    bz_model.summary()
-
-    print("{} trainable variables".format(len(bz_model.trainable_variables)))
-    print("{} variables".format(len(bz_model.variables)))
-
-
-    # Training signatures
-    # training_boards = tf.TensorSpec([None, 8, 8, 12], tf.uint64, name="training_boards")
-    # p_values = tf.TensorSpec([None, 8, 8, 64], tf.float32, name="p_values")
-    # v_values = tf.TensorSpec([None, 3], tf.float32, name="v_values")
-    # train_step_concrete = bz_model.train_step.get_concrete_function(training_boards, p_values, v_values)
-
-    # init = tf.variables_initializer(tf.global_variables(), name="init")
 
     signatures = { "call": call_concrete } #, "train": train_step_concrete }
     print(signatures)

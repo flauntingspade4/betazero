@@ -4,13 +4,13 @@ use crate::{positions::move_to_probability_index, BZSessionHandle, MCEdge, MCNod
 
 use citron_core::{nn::board_to_network_input, MoveGen, PlayableTeam};
 
+use ndarray::Axis;
 // use ndarray::Axis;
 use petgraph::{
     graph::{EdgeReference, Graph, NodeIndex},
     visit::EdgeRef,
     Directed,
 };
-use tensorflow::Tensor;
 
 pub struct MCTree {
     graph: Graph<MCNode, MCEdge, Directed>,
@@ -129,12 +129,9 @@ impl MCTree {
         let board = node.board.clone();
         let move_gen = MoveGen::new(&board).into_inner();
 
-        let (c_prior_probabilties, c_values) = session_hande
-            .call(Tensor::from(board_to_network_input(
-                &board,
-                board.to_play(),
-            )))
-            .unwrap();
+        let network_input = board_to_network_input(&board, board.to_play()).insert_axis(Axis(0));
+
+        let (c_prior_probabilties, c_values) = session_hande.call(network_input.into()).unwrap();
         let value = (*c_values).try_into().unwrap();
         node.outputs = Some(value);
 

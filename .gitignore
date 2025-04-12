@@ -1,4 +1,9 @@
 **/target
 **/.idea
 **/model
-**/games
+**/ae_model
+**/enc_model
+**/__pycache__
+
+**.pgn
+**.pickle

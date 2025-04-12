@@ -1,7 +1,10 @@
 import tensorflow as tf
 import tf_keras as keras
 import pickle
+from os import listdir
+from os.path import isfile, join
 import random
+import matplotlib.pyplot as plt
 
 
 FILTERS = [256, 256, 128]
@@ -57,6 +60,19 @@ class AutoEncoder(keras.Model):
         return self.decoder(enc)
 
 
+def plot_losses(losses, title="Neural Network Training Loss"):
+    epochs = range(1, len(losses) + 1)  # Epoch numbers start from 1
+
+    plt.figure(figsize=(10, 6))  # Adjust figure size as needed
+    plt.plot(epochs, losses, marker='o', linestyle='-', color='blue')
+    plt.title(title)
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.grid(True)
+    plt.xticks(epochs)  # Show all epoch numbers on x-axis
+    plt.tight_layout()  # Adjust layout to prevent labels from overlapping
+    plt.show()
+
 def generate_model():
     model = AutoEncoder()
     optimizer = keras.optimizers.Adam(learning_rate=0.00005)
@@ -65,45 +81,46 @@ def generate_model():
     return model
     
 
-def prepare_moves(moves):
+def prepare_moves(white_won, black_won):
     while True:
-        index = random.randrange(len(moves))
-        yield moves[index], moves[index]
+        if bool(random.getrandbits(1)):
+            chosen = random.choice(random.choice(white_won))
+        else:
+            chosen = random.choice(random.choice(black_won))
+        yield chosen, chosen
+
+        
+def prepare_file(file_name):
+    parsed = []
+    data = pickle.load(open(file_name, "rb"))
+    for i, position in enumerate(data):
+        parsed.append(tf.reshape(tf.constant(position["data"], dtype=tf.float32), (8, 8, 14)))
+    return parsed
 
 
 def train_model(model):
-    moves = []
-    for name in ["white_won_teams.pickle", "black_won_teams.pickle"]:
-        n_moves = pickle.load(open(name, "rb"))
-        for m in n_moves:
-            moves.append(tf.reshape(tf.constant(m["data"]), (8, 8, 14)))
-            if len(n_moves) > 800_000:
-                break
-    print("{} total moves".format(len(moves)))
+    white_won_files = [join("white_won", f) for f in listdir("white_won") if isfile(join("white_won", f))]
+    black_won_files = [join("black_won", f) for f in listdir("black_won") if isfile(join("black_won", f))]
+    
+    losses = []
+
     output_signature = (tf.TensorSpec(shape=(8, 8, 14), dtype=tf.float32), tf.TensorSpec(shape=(8, 8, 14), dtype=tf.float32))
-    dataset = tf.data.Dataset.from_generator(prepare_moves, output_signature=output_signature, args=[moves]).take(100_000).batch(16)
-    # train_dataset, test_dataset = tf.keras.utils.split_dataset(dataset, left_size=0.9)
-    model.fit(dataset, epochs=5)
-    
-    # model.evaluate(test_dataset)
-    # model.evaluate(test_dataset)
-    
-    input_spec = tf.TensorSpec(shape=(None, 8, 8, 14), dtype=tf.float32)
-    signatures = { "call": model.call.get_concrete_function(input_spec) }
-    model.save("ae_model", save_format="tf", signatures=signatures)
-    
-    signatures = { "call": model.encoder.call.get_concrete_function(input_spec) }
+    for _ in range(5):
+        chosen_white = [prepare_file(c) for c in random.choices(white_won_files, k=2)]
+        chosen_black = [prepare_file(c) for c in random.choices(black_won_files, k=2)]
+        dataset = tf.data.Dataset.from_generator(prepare_moves, output_signature=output_signature, args=[chosen_white, chosen_black]).batch(32).take(2000)
+        
+        history = model.fit(dataset, epochs=4)
+        for l in history.history["loss"]:
+            losses.append(l)
+        
+    signatures = { "call": model.encoder.call.get_concrete_function(tf.TensorSpec(shape=(None, 8, 8, 14), dtype=tf.float32)) }
     model.encoder.save("enc_model", save_format="tf", signatures=signatures)
+    plot_losses(losses, "Autoencoder Training Loss")
     return model
 
 
 if __name__ == "__main__":
-    # if len(sys.argv) > 1 and sys.argv[1] == "-n":
     model = generate_model()
     train_model(model)
-    
-    input_spec = tf.TensorSpec(shape=(None, 8, 8, 14), dtype=tf.float32)
-    signatures = { "call": model.call.get_concrete_function(input_spec) }
-    model.save("ae_model", save_format="tf", signatures=signatures)
-
 

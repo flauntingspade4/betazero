@@ -13,7 +13,7 @@ use rand::seq::IndexedRandom;
 
 use serde_pickle::SerOptions;
 
-use citron_core::{move_gen::Move, piece::PieceKind, Board, PlayableTeam, Team};
+use citron_core::{move_gen::Move, piece::PieceKind, Board, Game, PlayableTeam, Team};
 
 mod mc_tree;
 pub mod positions;
@@ -104,7 +104,6 @@ pub fn analyse_position(board: Board, rollout_limit: usize, handle: &BZSessionHa
     let start = Instant::now();
     for i in 0..rollout_limit {
         tree.run_rollout_from_root(i + 1, handle).unwrap();
-        // println!("Done rollout {i}");
     }
     println!("Move took {}ms", (Instant::now() - start).as_millis());
 
@@ -132,7 +131,7 @@ fn self_play_test() {
     serde_pickle::to_writer(&mut f, &games, SerOptions::new()).unwrap();
 }
 
-fn main() {
+fn _default_behaviour() {
     let handle = BZSessionHandle::load(None);
     let mut games = Vec::new();
 
@@ -154,6 +153,24 @@ fn main() {
     serde_pickle::to_writer(&mut f, &games, SerOptions::new()).unwrap();
 }
 
+fn main() {
+    let handle = BZSessionHandle::load(None);
+    let game = Game::new();
+
+    let output = analyse_position(game.board.clone(), 1500, &handle);
+
+    let best = output
+        .moves()
+        .max_by(|a, b| a.weight().visit_count.cmp(&b.weight().visit_count))
+        .unwrap()
+        .weight();
+
+    println!(
+        "Best move is {} with p = {} and v = {}",
+        best.played_move, best.prior_probability, best.average_value
+    );
+}
+
 #[test]
 fn yet_another_test() {
     let input =
@@ -165,45 +182,6 @@ fn yet_another_test() {
     // println!("{:?}", handle.call(tensorflow::Tensor::from(input)));
 
     analyse_position(Board::new(), 3, &handle);
-}
-
-#[test]
-fn move_gen_test() {
-    use citron_core::{piece::PieceKind, MoveGen};
-    /*println!("{:b}", 9259542123273814144u64);
-
-    let board =
-        Board::from_fen("rnbqkbnr/pppppp1p/8/6p1/P7/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
-    println!("{board}");
-    println!("{:b}", board.blockers());
-
-    let moves = MoveGen::new(&board);
-
-    for p_move in moves.into_inner().iter() {
-        println!(
-            "{p_move} with piece {} capturing {}",
-            p_move.moved_piece_kind(),
-            p_move.captured_piece_kind()
-        );
-    }*/
-
-    let board =
-        Board::from_fen("rnbqkbnr/pppppp1p/8/6p1/P7/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
-
-    let move_gen = MoveGen::new(&board).into_inner();
-    // let blockers = board.get_occupied();
-    // println!("{:b}", blockers);
-    // let bishops = board.pieces[0][PieceKind::Bishop as usize];
-    // println!("{:b}", bishops);
-
-    for bishop_move in move_gen
-        .iter()
-        .filter(|p| p.moved_piece_kind() == PieceKind::Bishop)
-    {
-        println!("Bishop move {}", bishop_move);
-    }
-
-    println!("{}", board);
 }
 
 #[derive(Debug, Clone)]
