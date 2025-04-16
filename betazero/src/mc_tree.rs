@@ -2,7 +2,10 @@
 
 use crate::{positions::move_to_probability_index, BZSessionHandle, MCEdge, MCNode};
 
-use citron_core::{nn::board_to_network_input, MoveGen, PlayableTeam};
+use citron_core::{
+    nn::{add_move_information_to_nn_input, board_to_network_input},
+    MoveGen, PlayableTeam,
+};
 
 use ndarray::Axis;
 // use ndarray::Axis;
@@ -129,10 +132,12 @@ impl MCTree {
         let board = node.board.clone();
         let move_gen = MoveGen::new(&board).into_inner();
 
-        let network_input = board_to_network_input(&board, board.to_play()).insert_axis(Axis(0));
+        let mut network_input = board_to_network_input(&board, board.to_play());
+        add_move_information_to_nn_input(&board, &mut network_input);
+        let network_input = network_input.insert_axis(Axis(0));
 
-        let (c_prior_probabilties, c_values) = session_hande.call(network_input.into()).unwrap();
-        let value = (*c_values).try_into().unwrap();
+        let (policy_output, value_output) = session_hande.call(network_input.into()).unwrap();
+        let value = (*value_output).try_into().unwrap();
         node.outputs = Some(value);
 
         for potential_move in move_gen {
@@ -149,7 +154,7 @@ impl MCTree {
                 new_node_index,
                 MCEdge::new(
                     potential_move,
-                    c_prior_probabilties.get(&[0, x as u64, y as u64, piece_i as u64]),
+                    policy_output.get(&[0, x as u64, y as u64, piece_i as u64]),
                 ),
             );
         }

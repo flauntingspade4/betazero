@@ -13,7 +13,7 @@ use rand::seq::IndexedRandom;
 
 use serde_pickle::SerOptions;
 
-use citron_core::{move_gen::Move, piece::PieceKind, Board, Game, PlayableTeam, Team};
+use citron_core::{move_gen::Move, piece::PieceKind, Board, PlayableTeam, Team};
 
 mod mc_tree;
 pub mod positions;
@@ -131,7 +131,7 @@ fn self_play_test() {
     serde_pickle::to_writer(&mut f, &games, SerOptions::new()).unwrap();
 }
 
-fn _default_behaviour() {
+fn default_behaviour() {
     let handle = BZSessionHandle::load(None);
     let mut games = Vec::new();
 
@@ -154,21 +154,22 @@ fn _default_behaviour() {
 }
 
 fn main() {
-    let handle = BZSessionHandle::load(None);
-    let game = Game::new();
+    // let handle = BZSessionHandle::load(None);
+    // let game = Game::new();
 
-    let output = analyse_position(game.board.clone(), 1500, &handle);
+    // let output = analyse_position(game.board.clone(), 1500, &handle);
 
-    let best = output
-        .moves()
-        .max_by(|a, b| a.weight().visit_count.cmp(&b.weight().visit_count))
-        .unwrap()
-        .weight();
+    // let best = output
+    //     .moves()
+    //     .max_by(|a, b| a.weight().visit_count.cmp(&b.weight().visit_count))
+    //     .unwrap()
+    //     .weight();
 
-    println!(
-        "Best move is {} with p = {} and v = {}",
-        best.played_move, best.prior_probability, best.average_value
-    );
+    // println!(
+    //     "Best move is {} with p = {} and v = {}",
+    //     best.played_move, best.prior_probability, best.average_value
+    // );
+    default_behaviour();
 }
 
 #[test]

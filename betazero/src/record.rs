@@ -1,7 +1,11 @@
 use ndarray::{Array4, Axis};
 use serde::{Deserialize, Serialize};
 
-use citron_core::{move_gen::Move, nn::board_to_network_input, Board, Team};
+use citron_core::{
+    move_gen::Move,
+    nn::{add_move_information_to_nn_input, board_to_network_input},
+    Board, Team,
+};
 use serde_with::serde_as;
 
 use crate::positions::move_to_probability_index;
@@ -25,7 +29,8 @@ impl GameRecord {
     /// of moves and the number of times they were visited
     /// during rollouts
     pub fn add_move(&mut self, board: &Board, moves: &[(Move, usize, f32, f32)]) {
-        let input = board_to_network_input(board, board.to_play());
+        let mut input = board_to_network_input(board, board.to_play());
+        add_move_information_to_nn_input(&board, &mut input);
         let input = input.insert_axis(Axis(0));
         self.boards.push(input);
 
@@ -52,6 +57,7 @@ impl GameRecord {
     /// Finishes the game and returns a list of training
     /// examples
     pub fn finish(self, winning_team: Team) -> Vec<BoardRecord> {
+        debug_assert_eq!(self.boards.len(), self.moves.len());
         let won = match winning_team {
             Team::White => [[1.0f32, 0., 0.], [0., 0., 1.]],
             Team::Black => [[0., 0., 1.], [1., 0., 0.]],
@@ -73,13 +79,7 @@ impl GameRecord {
             .into_iter()
             .zip(self.moves.into_iter())
             .zip(won)
-            .enumerate()
-            .map(|(i, ((board, moves), won))| BoardRecord {
-                board,
-                moves,
-                won,
-                move_number: i as u64,
-            })
+            .map(|((board, moves), won)| BoardRecord { board, moves, won })
             .collect()
     }
 }
@@ -92,5 +92,4 @@ pub struct BoardRecord {
     #[serde_as(as = "[[[_; 64]; 8]; 8]")]
     pub moves: [[[f32; 64]; 8]; 8],
     pub won: [f32; 3],
-    pub move_number: u64,
 }

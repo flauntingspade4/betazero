@@ -34,34 +34,10 @@ impl BZSessionHandle {
         let bundle = SavedModelBundle::load(&SessionOptions::new(), &["serve"], &mut graph, path)
             .expect("Can't load saved model");
 
-        // let sign_def = bundle.meta_graph_def().signatures();
-        // println!("SIGNATURES: {:#?}", sign_def);
-
-        // println!("{:?}", bundle.session.device_list().unwrap());
-
-        // dbg!(bundle.meta_graph_def());
-        // let init_signature = bundle
-        // .meta_graph_def()
-        // .get_signature("__saved_model_init_op")
-        // .unwrap();
-        // println!("Init signature name = {}", init_signature.method_name());
-        // let op_init = graph
-        // .operation_by_name_required(init_signature.method_name())
-        // .unwrap();
-        // let mut init_step = SessionRunArgs::new();
-        // init_step.add_target(&op_init);
-        // bundle.session.run(&mut init_step).unwrap();
-
-        // println!("Performed init op");
-
         Self { graph, bundle }
     }
 
     pub fn call(&self, input: Tensor<f32>) -> Result<(Tensor<f32>, Tensor<f32>), Status> {
-        // debug_assert_eq!(
-        // input.shape(),
-        // Shape::new(Some(vec![None, Some(8), Some(8), Some(12)]))
-        // );
         let call_signature = self
             .bundle
             .meta_graph_def()
