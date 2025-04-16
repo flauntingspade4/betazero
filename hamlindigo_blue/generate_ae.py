@@ -11,7 +11,6 @@ FILTERS = [256, 256, 128]
 LATENT_DIM = 100
 
 
-@keras.saving.register_keras_serializable(package="nards")
 class Encoder(keras.Model):
     def __init__(self):
         super(Encoder, self).__init__()
@@ -60,17 +59,18 @@ class AutoEncoder(keras.Model):
         return self.decoder(enc)
 
 
-def plot_losses(losses, title="Neural Network Training Loss"):
-    epochs = range(1, len(losses) + 1)  # Epoch numbers start from 1
+def plot_losses(losses, y_label):
+    epochs = range(0, len(losses) + 0)  # Epoch numbers start from 1
+    ticks = range(0, len(losses) + 1, 5)
+    plt.rc('font', size=30)
 
     plt.figure(figsize=(10, 6))  # Adjust figure size as needed
     plt.plot(epochs, losses, marker='o', linestyle='-', color='blue')
-    plt.title(title)
     plt.xlabel("Epoch")
-    plt.ylabel("Loss")
+    plt.ylabel(y_label)
     plt.grid(True)
-    plt.xticks(epochs)  # Show all epoch numbers on x-axis
-    plt.tight_layout()  # Adjust layout to prevent labels from overlapping
+    plt.xticks(ticks)
+    plt.tight_layout()
     plt.show()
 
 def generate_model():

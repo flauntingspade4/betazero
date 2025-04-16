@@ -21,13 +21,11 @@ pub fn main() {
     let mut input = input.as_str();
     let mut rng = rand::rng();
 
-    // println!("Loaded game");
-
     let mut white_won = FileRecord::new("white_won".to_string(), "white_won".to_string());
     let mut black_won = FileRecord::new("black_won".to_string(), "black_won".to_string());
 
     for i in 0.. {
-        if i % 100 == 0 {
+        if i % 1000 == 0 {
             println!("On game {i}");
         }
 
@@ -49,57 +47,22 @@ pub fn main() {
             }
         };
 
-        for played_move in output.moves.iter().choose_multiple(&mut rng, 10) {
+        for played_move in output.moves.iter().skip(7).choose_multiple(&mut rng, 6) {
             let board = Board::from_fen(&played_move.fen_before).unwrap();
-            // println!(
-            //     "{won_team} won. Adding board from fen \"{}\"\n{}",
-            //     &played_move.fen_before, board
-            // );
-            // println!("{board}");
+
             let mut r = board_to_network_input(&board, PlayableTeam::White);
             add_move_information_to_nn_input(&board, &mut r);
-            // println!("{:?}", r);
-            // println!("{:?}", r.clone().into_raw_vec());
             // ඞ ඞ ඞ
 
             match won_team {
                 PlayableTeam::White => white_won.add_position(r),
                 PlayableTeam::Black => black_won.add_position(r),
             }
-
-            // break;
         }
     }
+
     white_won.save();
     black_won.save();
-    //     println!("Writing {} black_lost positions", black_lost.len());
-    //     write_file(&format!(r"black_lost\file"), &mut black_lost);
-    //     black_lost.clear();
-    // }
-
-    // let mut won_writer = RecordWriter::create("won.tfrecord").unwrap();
-
-    // for won_position in white_won {
-    //     let board_feature = Feature::from_f32_list(won_position.into_raw_vec());
-
-    //     let example = vec![("board".into(), board_feature)]
-    //         .into_iter()
-    //         .collect::<Example>();
-
-    //     won_writer.send(example).unwrap();
-    // }
-
-    // let mut lost_writer = RecordWriter::create("won.tfrecord").unwrap();
-
-    // for lost_position in black_won {
-    //     let board_feature = Feature::from_f32_list(lost_position.into_raw_vec());
-
-    //     let example = vec![("board".into(), board_feature)]
-    //         .into_iter()
-    //         .collect::<Example>();
-
-    //     lost_writer.send(example).unwrap();
-    // }
 }
 
 #[derive(Serialize, Deserialize)]

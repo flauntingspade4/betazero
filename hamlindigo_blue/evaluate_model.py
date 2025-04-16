@@ -4,7 +4,7 @@ import tf_keras as keras
 from generate_model import prepare_file, data_generator
 
 if __name__ == "__main__":
-    model = keras.models.load_model("model")
+    model = keras.models.load_model("enc_model")
     won_games = []
     lost_games = []
     prepare_file("wonsmall.pickle", won_games)

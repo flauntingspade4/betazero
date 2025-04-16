@@ -107,9 +107,9 @@ def sliding_window(data, size):
         random.shuffle(data)
         current_files = [parse_and_prepare_file(data[i]) for i in range(size)]
         for i in range(size, n - size):
+            yield current_files
             current_files.pop(0)
             current_files.append(parse_and_prepare_file(data[i]))
-            yield current_files
 
 
 def train_model(model, loaded):
@@ -120,38 +120,43 @@ def train_model(model, loaded):
 
     output_signature = ((tf.TensorSpec(shape=(8, 8, 14), dtype=tf.float32), tf.TensorSpec(shape=(8, 8, 14), dtype=tf.float32)), tf.TensorSpec(shape=(2,), dtype=tf.float32))
     losses = []
-    for _ in range(100):
+    accuracy = []
+    for _ in range(4):
         for _ in range(5):
             # Choose the files to train from
-            # chosen_white = [parse_and_prepare_file(c) for c in next(white_won_sliding)]
-            # chosen_black = [parse_and_prepare_file(c) for c in next(black_won_sliding)]
             chosen_white = next(white_won_sliding)
             chosen_black = next(black_won_sliding)
             dataset = tf.data.Dataset.from_generator(data_generator, output_signature=output_signature, args=[chosen_white, chosen_black]).batch(32).take(3000).prefetch(tf.data.AUTOTUNE)
             # Train and save the model
-            history = model.fit(dataset, epochs=3)
+            history = model.fit(dataset, epochs=5)
+            print(history.history)
             for l in history.history["loss"]:
                 losses.append(l)
+            for a in history.history["binary_accuracy"]:
+                accuracy.append(a)
 
         save_model(model, loaded)
         
         # Choose the files to test from
         chosen_white = [parse_and_prepare_file("white_won_test.pickle")]
         chosen_black = [parse_and_prepare_file("black_won_test.pickle")]
-        test_dataset = tf.data.Dataset.from_generator(data_generator, output_signature=output_signature, args=[chosen_white, chosen_black]).batch(32).take(10000).prefetch(tf.data.AUTOTUNE)
+        test_dataset = tf.data.Dataset.from_generator(data_generator, output_signature=output_signature, args=[chosen_white, chosen_black]).batch(32).take(1000).prefetch(tf.data.AUTOTUNE)
 
         model.evaluate(test_dataset)
-    print(losses)
-    generate_ae.plot_losses(losses)
+    print(accuracy)
+    generate_ae.plot_losses(losses, "Loss")
+    generate_ae.plot_losses(accuracy, "Accuracy")
     return model
 
 
 if __name__ == "__main__":
     accuracy_metric = keras.metrics.BinaryAccuracy(threshold=0.5)
     
-    loaded = True
+    loaded = False
     if loaded:
         n_model = keras.models.load_model("model")
+        optimizer = keras.optimizers.Adam(0.0005)
+        n_model.compile(optimizer, loss="categorical_crossentropy", metrics=[accuracy_metric, "mae", "mse"])
     else:
         if len(sys.argv) > 1 and sys.argv[1] == "new":
             model = generate_ae.generate_model()
@@ -164,7 +169,5 @@ if __name__ == "__main__":
         n_model = NardsModel(encoder)
         optimizer = keras.optimizers.Adam(0.0005)
         n_model.compile(optimizer, loss="categorical_crossentropy", metrics=[accuracy_metric, "mae", "mse"])
-    # keras.utils.plot_model(n_model, to_file="n_model.png", show_shapes=True)
-    # keras.utils.plot_model(encoder, to_file="encoder.png", show_shapes=True)
 
     train_model(n_model, loaded)
